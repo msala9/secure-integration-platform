@@ -22,7 +22,11 @@ try
     if (args[0] == "denied")
     {
         try { _ = await client.GetStatusAsync(deadline.Token); }
-        catch (IOException) { Console.WriteLine("UNAUTHORIZED_CLIENT=DENIED"); return 0; }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Console.WriteLine("UNAUTHORIZED_CLIENT=DENIED");
+            return 0;
+        }
         catch (BrokerClientException failure) when (failure.Code is "application_not_authorized" or "operation_not_granted") { Console.WriteLine("UNAUTHORIZED_CLIENT=DENIED"); return 0; }
         throw new InvalidOperationException("Unauthorized application was accepted.");
     }
