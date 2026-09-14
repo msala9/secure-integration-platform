@@ -65,6 +65,7 @@ eng/Build-AlphaReleaseArtifacts.ps1
 eng/Build-LocalBrokerPackage.ps1
 eng/Test-LocalBrokerPackage.ps1
 eng/Test-LocalBrokerWindowsDelivery.ps1
+eng/Test-LocalBrokerCredentialAdoption.ps1
 eng/Test-LocalBrokerAdopterAdministration.ps1
 eng/AlphaReleaseContainerArchive.psm1
 eng/AlphaReleaseEvidenceContract.psm1
