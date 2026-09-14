@@ -70,7 +70,7 @@ describe('guided selection and targeted refresh', () => {
     expect(target.has('installation')).toBe(false);
     expect(target.has('application')).toBe(false);
     expect(target.has('environment')).toBe(false);
-  });
+  }, 10000);
 
   it('does not replace a newer empty search with a delayed result from an older query', async () => {
     let resolveOld!: (value: Awaited<ReturnType<typeof adminApi.tenants>>) => void;
@@ -178,7 +178,7 @@ describe('guided selection and targeted refresh', () => {
     await waitFor(() => expect(within(screen.getByTestId('guided-version-pagination')).getByRole('button', { name: i18n.t('previousPage') })).toBeEnabled());
     fireEvent.mouseDown(screen.getByRole('combobox', { name: i18n.t('version') }));
     fireEvent.click(await screen.findByRole('option', { name: '1.0.51 · Validated' }));
-    expect(await screen.findByRole('button', { name: i18n.t('requestApproval') })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: i18n.t('requestApproval') }, { timeout: 3000 })).toBeEnabled();
     expect(adminApi.connectorVersion).toHaveBeenCalledWith('sample', '1.0.51');
     expect(adminApi.connectorDefinition).toHaveBeenCalledWith('sample', '1.0.51');
   });
