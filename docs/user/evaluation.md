@@ -66,9 +66,11 @@ $containerDotNet = (Resolve-Path .\tools\alpha\Invoke-AlphaContainerDotNet.ps1).
 .\tools\m5\Invoke-M5Quickstart.ps1 -Phase Start -DotNetPath $containerDotNet
 ```
 
-Open `https://localhost:18443/admin/` in a fresh host browser session. The local
-synthetic CA is not publicly trusted: accept it only for this isolated loopback
-evaluation, following the [Admin quickstart](../operations/M5-ADMIN-QUICKSTART.md).
+Use the [Windows host browser trust procedure](../operations/M5-ADMIN-QUICKSTART.md#windows-host-browser-trust)
+to inspect and, with the machine owner's approval, temporarily trust the exact
+per-run public CA in the current-user root store. Then open
+`https://localhost:18443/admin/` in a fresh Chrome or Edge private window and require
+no TLS warning. Remove the exact imported root after inspection and before cleanup.
 Sign in through the UI using its synthetic identity selection. Do not pre-login by API.
 Follow [Guided onboarding](guided-connector-onboarding.md): Security Administrator,
 Editor and distinct Approver perform their authorized actions. Use the existing
