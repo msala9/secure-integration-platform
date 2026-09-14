@@ -45,6 +45,23 @@ beforeEach(async () => {
 afterEach(cleanup);
 
 describe('guided selection and targeted refresh', () => {
+  it.each(['Pending', 'Active'] as const)('keeps Published readiness consistent with %s enrollment after reload', async status => {
+    vi.mocked(adminApi.installation).mockResolvedValue({ ...installation, status });
+    vi.mocked(adminApi.connectorVersion).mockResolvedValue({ ...version, state: 'Published' });
+    const assertReadiness = async () => {
+      const action = status === 'Active' ? 'guidedActionComplete' : 'guidedActionEnrollmentHandoff';
+      expect(await screen.findByText(i18n.t(action), { exact: false })).toBeVisible();
+      if (status === 'Active') expect(screen.getByText(i18n.t('guidedPublishedActive'))).toBeVisible();
+      else expect(screen.queryByText(i18n.t('guidedPublishedActive'))).not.toBeInTheDocument();
+    };
+    const first = mount();
+    await assertReadiness();
+    const resume = first.history.location.pathname + first.history.location.search;
+    first.unmount(); first.cache.clear();
+    mount(resume);
+    await assertReadiness();
+  });
+
   it('keeps authoritative selections visible while changing list pages', async () => {
     mount();
     expect(await screen.findByRole('button', { name: i18n.t('requestApproval') })).toBeEnabled();

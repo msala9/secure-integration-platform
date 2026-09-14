@@ -201,13 +201,14 @@ export function GuidedOnboardingPage() {
 
   const mutationError = fileError ?? createInstallation.error ?? importDefinition.error ?? configure.error ?? requestApproval.error ?? approveAndPublish.error;
   const isPublished = currentVersion?.state === 'Published';
+  const isReady = isPublished && selectedInstallation?.status === 'Active';
   let stateKey = 'guidedStateSelectInstallation'; let roleKey = 'roleSecurityAdministrator'; let actionKey = 'guidedActionCreateInstallation'; let prerequisiteKey = 'guidedPrerequisiteInstallation';
   if (selectedInstallation?.status === 'Pending') { stateKey = 'guidedStateEnrollmentPending'; actionKey = 'guidedActionEnrollmentHandoff'; prerequisiteKey = 'guidedPrerequisiteEnrollment'; }
   else if (selectedInstallation?.status === 'Active' && (!currentVersion || currentVersion.state === 'Draft')) { stateKey = 'guidedStateDefinition'; roleKey = 'roleConnectorEditor'; actionKey = 'guidedActionDefinition'; prerequisiteKey = 'guidedPrerequisiteDefinition'; }
   else if (selectedInstallation?.status === 'Active' && currentVersion?.state === 'Validated' && (!bindingExists || missingGrants.length > 0)) { stateKey = 'guidedStateBindingGrant'; actionKey = 'guidedActionBindingGrant'; prerequisiteKey = 'guidedPrerequisiteBindingGrant'; }
   else if (selectedInstallation?.status === 'Active' && currentVersion?.state === 'Validated' && bindingExists && missingGrants.length === 0 && !requestedApproval && !approvedApproval) { stateKey = 'guidedStateApprovalRequest'; roleKey = 'roleConnectorEditor'; actionKey = 'guidedActionRequestApproval'; prerequisiteKey = 'guidedPrerequisiteApprovalRequest'; }
   else if (selectedInstallation?.status === 'Active' && currentVersion?.state === 'Validated' && (requestedApproval || approvedApproval)) { stateKey = 'guidedStateApprovalPublish'; roleKey = 'roleConnectorApprover'; actionKey = 'guidedActionApprovePublish'; prerequisiteKey = 'guidedPrerequisiteApprovalPublish'; }
-  else if (isPublished) { stateKey = 'guidedStateComplete'; roleKey = 'guidedRoleNone'; actionKey = 'guidedActionComplete'; prerequisiteKey = 'guidedPrerequisiteNone'; }
+  else if (isReady) { stateKey = 'guidedStateComplete'; roleKey = 'guidedRoleNone'; actionKey = 'guidedActionComplete'; prerequisiteKey = 'guidedPrerequisiteNone'; }
 
   if (tenants.isPending || applications.isPending || environments.isPending || connectors.isPending) return <LoadingState />;
   const loadError = tenants.error ?? applications.error ?? environments.error ?? connectors.error ?? installations.error ?? versions.error ?? selectedVersionQuery.error ?? selectedInstallationQuery.error ?? storedDefinition.error ?? bindings.error ?? grants.error ?? approvals.error ?? endpointResources.error ?? providerResources.error ?? review.error;
@@ -285,7 +286,7 @@ export function GuidedOnboardingPage() {
       <Button variant="contained" disabled={(!approvedApproval && !review.data) || approveAndPublish.isPending} onClick={() => approveAndPublish.mutate()}>{t('guidedVerifyApprovePublish')}</Button>
     </CardContent></Card>}
 
-    {isPublished && <Alert severity="success" sx={{ mt: 3 }} role="status">{t('guidedPublishedActive')}</Alert>}
+    {isReady && <Alert severity="success" sx={{ mt: 3 }} role="status">{t('guidedPublishedActive')}</Alert>}
     {mutationError && <Box sx={{ mt: 2 }}><ErrorState error={mutationError} /></Box>}
     <ActivationHandoffDialog activation={activation} onClose={() => setActivation(undefined)} />
   </>;

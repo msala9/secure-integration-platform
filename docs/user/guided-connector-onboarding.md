@@ -77,3 +77,7 @@ The final banner proves that the version is `Published`; the selected Installati
 must be `Active` and have an operation grant. Finish with one bounded invocation
 through the supported Runtime API and check metadata-only audit. The page does not
 turn the Admin UI into a proxy to arbitrary destinations.
+
+A `Pending` Installation still requires enrollment even when the Connector is already
+`Published`. The page must show the enrollment handoff action without a ready banner;
+publishing a Connector does not activate an Installation.
