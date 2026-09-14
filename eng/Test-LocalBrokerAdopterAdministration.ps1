@@ -19,8 +19,17 @@ function Assert-Admin {
 }
 function New-EphemeralPassword {
     $bytes = [byte[]]::new(18)
-    [Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+    $rng = [Security.Cryptography.RNGCryptoServiceProvider]::new()
+    try { $rng.GetBytes($bytes) }
+    finally { $rng.Dispose() }
     return ('A1!' + [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', 'a').Replace('/', 'b'))
+}
+function Get-StringSha256([string] $Value) {
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try {
+        return [Convert]::ToBase64String($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($Value)))
+    }
+    finally { $sha.Dispose() }
 }
 function Quote-Arg([string] $Value) {
     return '"' + $Value.Replace('\', '\\').Replace('"', '\"') + '"'
@@ -187,8 +196,8 @@ try {
     if (($updated | Where-Object { $_.RegistrationId -ceq 'local-sample' }).ExecutablePaths[0] -notlike '*\sample\SecureIntegration.Samples.LocalBroker.exe') { throw 'ADOPTER_GATE_SAMPLE_REGISTRATION_CHANGED' }
     $revokedApp = @($revoked | Where-Object { $_.RegistrationId -ceq 'adopter-eval' })[0]
     if (-not $revokedApp.Revoked -or @($revokedApp.AllowedUserSids).Count -ne 0 -or @($revokedApp.AllowedOperations).Count -ne 0) { throw 'ADOPTER_GATE_REVOKE_INVALID' }
-    $ledger.stateBeforeSha256 = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stateBefore)))
-    $ledger.stateAfterSha256 = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stateAfter)))
+    $ledger.stateBeforeSha256 = Get-StringSha256 $stateBefore
+    $ledger.stateAfterSha256 = Get-StringSha256 $stateAfter
     $ledger.accountSid = $sid
     $ledger.result = 'PASS'
     [IO.File]::WriteAllText((Join-Path $evidence 'result.json'), ($ledger | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
