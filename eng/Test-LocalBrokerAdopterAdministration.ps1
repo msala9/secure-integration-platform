@@ -109,8 +109,14 @@ Assert-Admin
 if ($AccountName.Length -gt 20 -or $AccountName -notmatch '^BrokerAdopt[0-9]{6,}$') { throw 'ADOPTER_GATE_ACCOUNT_NAME_INVALID' }
 $package = (Resolve-Path -LiteralPath $PackageDirectory).Path
 $evidence = [IO.Path]::GetFullPath($EvidenceDirectory)
-if (Test-Path -LiteralPath $evidence) { throw 'ADOPTER_GATE_EVIDENCE_EXISTS' }
-New-Item -ItemType Directory -Path $evidence | Out-Null
+if (Test-Path -LiteralPath $evidence) {
+    if (-not (Test-Path -LiteralPath $evidence -PathType Container)) { throw 'ADOPTER_GATE_EVIDENCE_PATH_INVALID' }
+    if (Test-Path -LiteralPath (Join-Path $evidence 'result.json') -PathType Leaf) { throw 'ADOPTER_GATE_EVIDENCE_RESULT_EXISTS' }
+    if (@(Get-ChildItem -LiteralPath $evidence -Force).Count -ne 0) { throw 'ADOPTER_GATE_EVIDENCE_NOT_EMPTY' }
+}
+else {
+    New-Item -ItemType Directory -Path $evidence | Out-Null
+}
 & (Join-Path $PSScriptRoot 'Test-LocalBrokerPackage.ps1') -PackageDirectory $package -ExpectedSourceCommit $ExpectedSourceCommit -ExpectedManifestSha256 $ExpectedManifestSha256 | Out-Null
 
 $lifecycle = Join-Path $package 'Invoke-LocalBroker.ps1'
