@@ -51,10 +51,9 @@ reusing existing Broker policy and protection operations. The local candidate ha
 focused static/settings evidence and a real ordinary-account Windows Service PASS on
 package `4a8eb70...`; it still needs focused review/integration before this dashboard
 can call it integrated. EVAL-DELIVERY follows with a versioned evaluation package
-and one focused success/recovery check. Neither outcome is integrated at this baseline. The development repository's
-[implementation plan](https://github.com/msala9/secure-integration-platform/blob/main/docs/implementation/implementation-plan.md#current-order-of-work)
-and [backlog](https://github.com/msala9/secure-integration-platform/blob/main/docs/implementation/backlog.md#current-work-order)
-own the scope; optional integrations and enterprise mechanisms remain demand-driven.
+and one focused success/recovery check. Neither outcome is integrated at this baseline.
+The development repository's current plan and backlog own the scope; optional
+integrations and enterprise mechanisms remain demand-driven.
 
 ## Local Broker path — delivery and credential adoption integrated
 

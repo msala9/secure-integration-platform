@@ -65,6 +65,7 @@ eng/Build-AlphaReleaseArtifacts.ps1
 eng/Build-LocalBrokerPackage.ps1
 eng/Test-LocalBrokerPackage.ps1
 eng/Test-LocalBrokerWindowsDelivery.ps1
+eng/Test-LocalBrokerAdopterAdministration.ps1
 eng/AlphaReleaseContainerArchive.psm1
 eng/AlphaReleaseEvidenceContract.psm1
 eng/CoreExportInventory.psm1
@@ -96,6 +97,7 @@ eng/Export-OpenSourceCore.ps1
 sdk/
 samples/DirectGatewayClient/
 samples/LocalBroker/
+samples/LocalBrokerAdopter/
 src/Admin/
 src/Authentication/
 src/Broker/
