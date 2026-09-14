@@ -1,7 +1,7 @@
 # Backlog ordered by outcome
 
-Updated: 2026-09-07
-Planning baseline: `de743638a03dcb5b0166a6a7f82285e01f6377e6` (PR #71 integrated).
+Updated: 2026-09-14
+Integrated software baseline: `b13e6ba781a90d331836d37ec363baf27248737f` (through PR #77).
 
 This is the work queue, not another capability dashboard.
 [IMPLEMENTATION_STATUS.md](../../IMPLEMENTATION_STATUS.md) owns integrated status;
@@ -16,7 +16,9 @@ outcomes and boundaries. Historical slice tables are preserved [below](#historic
 | Integrated through PR #68 | Broker → Gateway continuity | Standalone local result integrated; remote fault cases frozen. | In-process evidence: enrollment, Published invocation, same-Installation restart, single-flight renewal, revocation/expiry/grant denial, explicit reconnection and authoritative recovery after interruption, with no automatic replay of uncertain application mutations. |
 | Integrated through PR #69 | Target-specific distribution and operation | Bounded real-service qualification passed on software `5ad048f...`, Windows 10 Pro 22H2 x64 19045.6466. | Package, non-elevated use on an Administrators-member account, exact two-build envelope compatibility, restart/rejected-update and real-service → Gateway/PG outage recovery observed. No broader Windows, live renewal/DR or production claim. |
 | Integrated through PR #70 | Remove per-Installation hardcoding/plaintext storage | User approved extending the existing small sample; no new primitive or proxy. | Runtime input, ciphertext-only save, transient authorized use, new execution and safe replacement; short English guide and real non-Administrators-account proof. Focused tests and account gate PASS on software `8909ab9...` / gate `9ab03c1...`; candidate subsequently reviewed and integrated. |
-| NOW — Admin consolidation | Usable first access, responsive pages, clear dates and bundled operator guide | Fixes and guide available in the local preview. | One converged review/PR, relevant tests and canonical checkout aligned with integrated main; keep the running preview and its data intact. |
+| Integrated after PR #71 | Admin consolidation and targeted security/delivery controls | Included in the software baseline above. | First access, responsive layout, UTC dates, operator guide, Broker/Direct onboarding alignment, bounded IPC admission, Azure readiness read, tenant audit export and package preflight are integrated; not an assertion of production readiness. |
+| NOW — BROKER-ADOPT | Register and maintain an adopter's own .NET application | Existing Broker/SDK protection and sample adoption are integrated; freeze one application and Windows target. | Supported administrator tooling for explicit registration, inspection, executable update and revocation; no manual service-configuration edits. One ordinary-account real-service proof covers use, restart, old-ciphertext preservation and denial after revocation. |
+| NEXT — EVAL-DELIVERY | Versioned, usable evaluation package | BROKER-ADOPT converged; artifact/target and publication scope selected. | One concise setup/verification/recovery guide and the existing pre-alpha usability check on the delivered candidate; source/manifest provenance, known limits and proportionate release checks. No new universal installer. |
 | DEFERRED | Broader surfaces and additional integrations | A concrete requirement or observed defect, explicit scope and an owner; not hypothetical future reuse. | Define a bounded outcome and relevant negatives before promoting work. Use the triggers below; no new framework or laboratory by default. |
 
 A prerequisite is not evidence of completion. Candidate evidence remains distinct from
@@ -29,11 +31,15 @@ not replace that real-service result.
 - **MSI/COM/native adapters or additional Windows targets:** a selected adopter/deployment
   needs that exact surface after the small .NET path works. Qualify only the requested
   artifact/compatibility slice; do not pull the whole M9 plan into NOW.
-- **Cloud deployments, federation, attestation, drivers/TEE or additional providers:** a
+- **Additional cloud deployments, federation, attestation, drivers/TEE or providers:** a
   demonstrated requirement cannot be met safely with existing boundaries. A mandatory
   cloud, generic identity/vault platform or universal SQL/HTTP proxy is not planned.
 - **New Connectors or customer pilots:** concrete demand and explicit authorization.
-  CGM is a possible adopter, not a dependency or a pilot authorized by this backlog.
+  Private integration plans remain outside the public repositories and do not
+  become dependencies of the provider-neutral adoption path.
+- **Untrusted Connector execution:** a concrete need to load third-party code outside
+  the operator's trust boundary. Current in-process modules are trusted code; the
+  capability boundary is not a sandbox. Do not build process isolation speculatively.
 - **FSE2:** reopen only for a concrete requirement or observed defect with its own
   authorization. Existing offline and partial live qualifications remain unchanged;
   FHIR's undetermined 500 and unqualified publication are not prompts for speculative
@@ -41,9 +47,10 @@ not replace that real-service result.
 - **Enterprise recovery/HA/DR and broad performance qualification:** a real operating
   target, workload and recovery objective. DPAPI context loss is not solved by
   promising recovery without recovery material.
-- **Merge, tag or release:** separate publication authority and the applicable converged
-  review/gates. The Windows writer hands off a public non-draft PR; integration is
-  coordinated separately and no tag or release is authorized by this queue.
+- **Institutional distribution, tag or release:** explicit publication authority and
+  the applicable converged checks. The ApoCert source snapshot is not an automatic
+  mirror of development main; internal plans, agent instructions and private
+  integrations stay excluded. No tag or release is authorized by this queue.
 
 No `GetSecret`, copied vendor credentials, mandatory new identity platform or
 additional abstraction is justified solely by an item being deferred.
@@ -51,14 +58,17 @@ additional abstraction is justified solely by an item being deferred.
 The integrated standalone software has targeted Broker/SDK/storage evidence and one passing
 [service verification entrypoint](../user/local-broker.md#one-real-service-verification-entrypoint)
 on exact software candidate `3955fd0c3a5eccf816d44b0faba9a704227baa3d`.
-The result covers elevated service lifecycle and same-candidate update. Ordinary-user,
-cross-release and disaster-recovery qualification remain pending.
+That result covers elevated service lifecycle and same-candidate update only.
+Later PR #69/#70 observations separately cover selected cross-build compatibility
+and ordinary-account adoption; they do not establish general Windows compatibility
+or disaster recovery. See the exact scopes in the implementation dashboard.
 
 ## Delivery and verification
 
-One owner completes the implementation and imports the disjoint plan update once into
-one local candidate. Use focused verification during causal iterations and one final
-proportionate review; no artificial commit budget or series of micro-PRs.
+One owner completes the next outcome from the integrated plan. Estimate implementation,
+verification/lab and evidence separately. Use focused verification during causal
+iterations and one final proportionate review; no artificial commit budget or series
+of micro-PRs. Parallelize only independent outputs without competing product changes.
 
 Measure adopter steps and useful startup/memory/latency observations through the small
 sample, not a new laboratory or invented pass thresholds. Keep historical evidence
@@ -67,8 +77,9 @@ result integrated or released before it is.
 
 ### Pre-alpha usability qualification
 
-Before the first public alpha, qualify the delivered candidate through the public
-entrypoints, once at convergence. A green component suite is not a substitute for
+Before the next evaluation release, qualify the delivered candidate through the public
+entrypoints, once at convergence. The institutional source snapshot does not close
+this package-level check. A green component suite is not a substitute for
 an adopter being able to enter and use the product. The Admin preview exposed two
 gaps: the browser suite authenticated by API before opening the page, and its
 container shared the Gateway network instead of using the host-published port.
@@ -88,8 +99,9 @@ Use the existing scripts and samples for four short checks; do not build a new l
   a successful new start. Preserve foreign resources; reuse existing failure
   tests rather than reproducing their entire matrix.
 - **Windows, when distributing the Broker package:** install the actual candidate
-  package on the declared Windows target, use the credential sample from an
-  ordinary account in a new process, restart and verify reuse/replacement. A
+  package on the declared Windows target, register the separate evaluation application
+  through the supported adopter path, use it from an ordinary account in a new
+  process, restart and verify reuse/update/revocation. A
   resumed historical installation is not fresh-package evidence.
 
 Completion requires usable success and recovery without SQL, internal fixture

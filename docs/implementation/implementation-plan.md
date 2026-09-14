@@ -1,34 +1,97 @@
 # Implementation plan
 
-Updated: 2026-09-06
-Planning baseline: `f2bdb2901dfa9ea3c32795b356603a1ecf615575` (PR #69 integrated).
+Updated: 2026-09-14
+Integrated software baseline: `b13e6ba781a90d331836d37ec363baf27248737f` (through PR #77).
 
 This is the current order of work. [IMPLEMENTATION_STATUS.md](../../IMPLEMENTATION_STATUS.md)
 owns integrated capability and qualification claims; the [backlog](backlog.md#current-work-order)
 owns the small NOW/NEXT/DEFERRED queue. The older Core alpha/FSE2 plan is retained
 [below](#historical-planning-snapshot) as history, not a competing active roadmap.
 
-The present authorization covers implementation, documentation, Signed-off-by commits,
-public push and a non-draft PR for the application credential-adoption candidate. It does
-not authorize merge, tag, release, OfficialTest calls, external contact or a production
-claim.
+This update records the next development outcomes; it does not claim they are
+implemented or start a new deployment, live campaign or customer integration.
+Execution and publication authority belong to the assigned task, not to a backlog label.
 
 ## Current order of work
 
-1. Make the existing Windows Local Broker independently usable for one local
-   application-protection path, without a Gateway.
-2. Complete the existing Broker → Gateway identity and interruption-recovery path,
-   reusing the synthetic service.
-3. Qualify distribution and operation for an explicitly selected Windows target,
-   with an installable artifact and a tested compatibility matrix.
-4. Make a per-Installation application credential usable without hardcoding or
-   plaintext persistence, using the small sample and existing protection SDK.
+1. **Integrated foundation:** standalone Broker protection, Broker → Gateway
+   continuity, selected Windows delivery and application credential adoption
+   through PRs #67–70; subsequent simplification, Admin first access/layout/operator
+   guide, onboarding alignment, targeted security fixes and audit export/package
+   preflight through PR #77. Do not restart these as separate development projects.
+2. **NOW — BROKER-ADOPT:** let an adopter register and maintain its own .NET
+   application through supported tooling, beyond the bundled `local-sample`.
+3. **NEXT — EVAL-DELIVERY:** prepare a versioned evaluation package with one
+   documented success/recovery path and one proportionate convergence check.
+4. **DEFERRED:** new integrations, platforms and enterprise mechanisms require
+   a concrete consumer or defect; see the [backlog triggers](backlog.md#deferred-work-triggers).
 
-The first outcome is integrated through PR #67, with one earlier exact-candidate
-elevated service qualification. The second is integrated through PR #68 and the
-bounded third through PR #69. The fourth is the current authorized slice. These
-results do not silently expand one another: the Windows gate remains attached to its
-exact software commit, and the continuity fixture is not a real-service qualification.
+Integrated software, synthetic tests, selected Windows service observations and
+external-service qualification remain separate. Updating this plan does not repeat
+or extend the exact-candidate qualifications recorded below.
+
+## NOW — supported onboarding of an adopter's application
+
+The runtime already accepts explicit application registrations, and the SDK already
+exposes `ProtectData`/`UnprotectData`. The gap is supported administration: the
+Windows delivery script installs `local-sample` and updates its executable hash;
+the [own-application guide](../user/local-broker.md#protect-and-recover)
+currently requires editing protected service configuration. Interface compatibility
+and a working sample are not a complete adopter lifecycle.
+
+Deliver one small, administrator-operated path to register, inspect, update and
+revoke a named application, reusing the existing configuration, policy and SDK.
+The first outcome is one application-owned, per-Installation credential with the
+Gateway disabled. It does not add an external authentication flow or retrieve a
+vendor credential.
+
+Completion requires:
+
+- A .NET evaluation application distinct from the bundled sample can be registered
+  and perform authorized protection/unprotection using only the published procedure,
+  without hand-editing service settings or knowing repository internals.
+- Registration uses explicit administrator-approved Windows SID, installed executable
+  identity and exact operation/context grants. Preserve existing path, hash/publisher,
+  IPC-peer and directory-ownership checks; never authorize a general-purpose host or
+  let the application enroll or widen its own permissions.
+- An explicit executable update preserves the application registration, Installation,
+  keys and existing ciphertext. Revocation denies subsequent use without deleting
+  protected data, keys or unrelated registrations. Invalid or interrupted configuration
+  changes preserve the last valid policy and fail closed.
+- One real-service proof on the declared Windows target uses an ordinary account,
+  a new application process, restart, authorized update and revocation. Focused
+  negatives cover a wrong executable/account/context and an invalid update; reuse
+  existing IPC, cryptography and package-preflight tests rather than repeating their lab.
+- Diagnostics are bounded and contain no plaintext credential or key. The guide
+  distinguishes application-secret replacement, issuer revocation and Broker key
+  lifecycle, and states the compromised-process and DPAPI recovery limits.
+
+No new service, Admin UI, vault, policy framework, secretless proxy, Connector,
+native/COM adapter or automatic key rotation is required. Prefer the narrowest
+extension of existing Windows tooling; a new runtime primitive needs an observed
+blocker and an explicit complexity checkpoint.
+
+## NEXT — versioned evaluation delivery
+
+After BROKER-ADOPT converges, select the exact artifact and supported target; package
+the existing software, concise setup/verification/recovery instructions, known limits
+and provenance. Reuse historical and exact-source evidence only where applicable.
+Run the [existing pre-alpha usability check](backlog.md#pre-alpha-usability-qualification)
+once on the delivered candidate, including fresh browser access and actual Windows
+package use when that package is included. Record implementation, verification/lab
+and evidence effort separately before starting; this is not a general re-audit or
+a new installer project. A source snapshot is not a tested binary delivery.
+
+## Development and institutional distribution
+
+This plan and the internal backlog belong to the development repository. The
+[ApoCert distribution](https://github.com/ApoCert-it/secure-integration-platform)
+has independent snapshot history, public capability documentation, a changelog and
+source provenance. Its 11 Sep 2026 source snapshot is based on `b13e6ba...`; it
+does not contain this internal plan or authorize a binary release. Development
+updates are not mirrored automatically. A separately authorized institutional
+update must select the public deliverables and preserve attribution and provenance;
+private customer integrations, agent instructions and internal planning stay excluded.
 
 ## Integrated — independently usable Windows Local Broker
 
@@ -150,7 +213,9 @@ Focused tests cover the sequence, input bound, tamper/context/ownership denial a
 failed save. One separate task-owned real Windows standard account (not a member of
 Administrators) closes that precise qualification gap; no repetition of the delivery
 or Gateway laboratory. That [real-account result passed](../user/local-broker.md#application-credential-adoption-observed-on-september-6-2026)
-on software `8909ab9...` with gate `9ab03c1...`; candidate CI/review remain pending.
+on software `8909ab9...` with gate `9ab03c1...`; review and integration completed
+through PR #70. BROKER-ADOPT addresses the remaining own-application tooling gap,
+not a missing protection primitive.
 There is no new vault, primitive, proxy, connector or claim that the application
 never receives plaintext, and no CVD closure without integrating the actual adopter.
 
@@ -158,9 +223,9 @@ Maintain three distinct verification paths:
 
 - The provider-neutral synthetic Core remains easy to evaluate through its
   [existing local pilot](../user/local-pilot.md).
-- Windows/Broker demonstrates the installed-software boundary. Historical M0/M1 and
-  M3A evidence remains attached to its own baseline; the new standalone path needs
-  its own bounded acceptance result.
+- Windows/Broker demonstrates the installed-software boundary. Historical M0/M1,
+  M3A and later standalone/delivery observations remain attached to their exact
+  baselines; an adopter's application needs its own bounded acceptance result.
 - FSE2 remains an optional pack and separate external-integration evidence. Its
   [current guide](../user/fse2-validation-status.md) and the authoritative status
   retain the offline/live distinctions. This work neither reopens that track nor
@@ -169,8 +234,9 @@ Maintain three distinct verification paths:
 The differentiation hypothesis is a small set of authorized operations for distributed
 Windows applications, with less credential distribution and manageable adoption cost.
 Windows support alone is not a differentiation claim. SIP is not being expanded into
-a general-purpose replacement for SPIRE, Aembit or Secretless. CGM is a possible adopter,
-not a product dependency or an authorized pilot.
+a general-purpose replacement for SPIRE, Aembit or Secretless. Customer-specific
+integrations have separate private plans and authority; they are not public Core
+dependencies or prerequisites for this outcome.
 
 Do not add speculative Connectors, a universal SQL/HTTP proxy, `GetSecret`, mandatory
 cloud, SPIFFE/WIMSE federation, continuous attestation, a mandatory driver/TEE or a
@@ -179,9 +245,11 @@ the selected case; a new Connector needs concrete demand and separate authorizat
 
 ## Ownership, measurement and verification
 
-One implementation owner carries the Broker outcome end-to-end. The disjoint plan
-update is integrated once into that owner's candidate; do not split the result into
-a chain of micro-PRs or writer/reviewer handoffs.
+One implementation owner carries BROKER-ADOPT end-to-end from the integrated plan.
+Estimate implementation, verification/laboratory and evidence separately; freeze
+the visible result and essential negatives before coding. Do not split the result
+into a chain of micro-PRs or writer/reviewer handoffs. Parallel work is useful only
+for independent, disjoint outputs without competing changes to shared contracts.
 
 Use the small sample to record adopter steps and, where useful, startup time, memory
 and operation latency, with workload and machine context. These are measurements,
