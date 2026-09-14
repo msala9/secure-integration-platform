@@ -16,6 +16,7 @@ using SecureIntegration.Gateway.Domain;
 using SecureIntegration.Gateway.Infrastructure;
 using SecureIntegration.M6.SyntheticSoapServer;
 using SecureIntegration.Providers.Abstractions;
+using SecureIntegration.TestDiagnostics;
 using Xunit;
 
 namespace SecureIntegration.Gateway.Integration.Tests.ConnectorRuntime.Auth.Soap;
@@ -73,6 +74,7 @@ public sealed class TypedSessionHandshakeRealHttpIntegrationTests
     [Fact]
     public async Task Wave1_IT_Internal_composition_store_authorizer_registry_and_real_restricted_HTTPS_complete_external_admission()
     {
+        using TimeoutObservation observation = new("soap");
         await using TypedRuntimeApiFactory factory = new();
         using HttpClient api = factory.CreateClient();
         TypedSessionHandshakeAdapterRegistry adapters = factory.Services.GetRequiredService<TypedSessionHandshakeAdapterRegistry>();
@@ -80,13 +82,16 @@ public sealed class TypedSessionHandshakeRealHttpIntegrationTests
         IGatewayRegistry gatewayRegistry = factory.Services.GetRequiredService<IGatewayRegistry>();
         IGatewayClock clock = factory.Services.GetRequiredService<IGatewayClock>();
         Assert.NotNull(factory.Services.GetRequiredService<TypedSessionHandshakeRuntime>());
+        observation.Mark("factory-ready");
 
         using CertificateFixture certificates = CertificateFixture.Create();
         const string externalCandidate = "production-path-external-session";
+        observation.Mark("https-server-start");
         await using SyntheticSoapServerInstance server = await SyntheticSoapServerHost.StartAsync(
             new("synthetic-user", "synthetic-password", false, TimeSpan.FromMinutes(5), TimeSpan.FromSeconds(2), true, externalCandidate),
             certificates.Server, TestContext.Current.CancellationToken);
 
+        observation.Mark("https-server-started");
         string suffix = Guid.NewGuid().ToString("N");
         string connectorSlug = "typed-production-" + suffix;
         Guid tenantId = Guid.NewGuid();
@@ -142,7 +147,9 @@ public sealed class TypedSessionHandshakeRealHttpIntegrationTests
         Assert.Equal("BGW-AUTHZ-OPERATION-DENIED", wrongGrant.Code);
         Assert.Equal(0, server.Counters.CreateSession);
 
+        observation.Mark("acquire-start");
         TypedSessionHandshakeResult started = await runtime.AcquireAsync(principal, connectorSlug, "session-bootstrap", "typed-session", TestContext.Current.CancellationToken);
+        observation.Mark("acquire-completed");
         Assert.Equal(TypedSessionHandshakeResultKind.ExternalAdmissionRequired, started.Kind);
         foreach (RegisteredInstallationIdentity wrongIdentity in new[]
         {
@@ -156,14 +163,26 @@ public sealed class TypedSessionHandshakeRealHttpIntegrationTests
             Assert.Equal("SOAP-ADMISSION-INTENT-INVALID", wrongPrincipal.Code);
         }
         Assert.Equal(0, server.Counters.ValidateSession);
+        observation.Mark("admission-start");
         TypedSessionHandshakeResult completed = await runtime.CompleteExternalAdmissionAsync(principal, started.AdmissionIntent!.Reference,
             Encoding.UTF8.GetBytes(externalCandidate), TestContext.Current.CancellationToken);
+        observation.Mark("admission-completed");
 
         Assert.Equal(TypedSessionHandshakeResultKind.Issued, completed.Kind);
         AuthorizedGatewayInvocation authorized = await authorizer.AuthorizeAsync(principal, connectorSlug, "session-bootstrap", TestContext.Current.CancellationToken);
         ResolvedTypedSessionHandshake current = await publishedResolver.ResolveAsync(authorized, new("typed-session"), TestContext.Current.CancellationToken);
-        SoapBusinessResult business = await sessions.InvokeAsync(current.State.ExecutionContext, current.State.Endpoint, BusinessProfile(),
-            new Dictionary<string, string> { ["payload"] = "normal" }, completed.Session, TestContext.Current.CancellationToken);
+        observation.Mark("business-start-30000ms-operation-deadline");
+        SoapBusinessResult business;
+        try
+        {
+            business = await sessions.InvokeAsync(current.State.ExecutionContext, current.State.Endpoint, BusinessProfile(),
+                new Dictionary<string, string> { ["payload"] = "normal" }, completed.Session, TestContext.Current.CancellationToken);
+            observation.Mark("business-completed");
+        }
+        finally
+        {
+            observation.Mark(server.Counters.Business > 0 ? "server-business-observed" : "server-business-not-observed");
+        }
         Assert.Equal("accepted", business.Values["result"]);
         Assert.Equal(1, server.Counters.CreateSession);
         Assert.Equal(1, server.Counters.ValidateSession);

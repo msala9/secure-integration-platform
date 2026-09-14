@@ -5,6 +5,7 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../support/TimeoutObservation.cs" Link="TimeoutObservation.cs" />
     <ProjectReference Include="../../../samples/LocalBroker/LocalBroker.csproj" />
     <ProjectReference Include="../../../src/Broker/Broker.Infrastructure.Windows/Broker.Infrastructure.Windows.csproj" />
     <ProjectReference Include="../../../sdk/dotnet/Broker.Sdk/Broker.Sdk.csproj" />

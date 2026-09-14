@@ -15,6 +15,7 @@ using SecureIntegration.Broker.Infrastructure.Windows;
 using SecureIntegration.Broker.Sdk;
 using SecureIntegration.Contracts;
 using SecureIntegration.Samples.LocalBroker;
+using SecureIntegration.TestDiagnostics;
 using Xunit;
 
 namespace SecureIntegration.Broker.Integration.Tests;
@@ -441,16 +442,22 @@ public sealed class WindowsBrokerIntegrationTests
     [Fact]
     public async Task Incomplete_handshake_releases_connection_and_allows_later_request()
     {
-        CapturingAudit audit = new();
+        using TimeoutObservation observation = new("broker");
+        CapturingAudit audit = new() { ConnectionObserved = () => observation.Mark("connection-audit") };
         await WithBrokerAndPipeAsync(async (client, name) =>
         {
+            observation.Mark("client-connect-start");
             await using NamedPipeClientStream stalled = await ConnectRawPipeAsync(name, TestContext.Current.CancellationToken);
+            observation.Mark("client-connected-not-proof-of-server-admission");
             await stalled.WriteAsync("B"u8.ToArray(), TestContext.Current.CancellationToken).ConfigureAwait(false);
             await stalled.FlushAsync(TestContext.Current.CancellationToken).ConfigureAwait(false);
-            await AssertPipeClosedAsync(stalled);
+            observation.Mark("partial-handshake-flushed");
+            await AssertPipeClosedAsync(stalled, observation);
 
+            observation.Mark("later-status-start");
             Assert.Equal("healthy", (await client.GetStatusAsync(TestContext.Current.CancellationToken).ConfigureAwait(false)).Status);
-        }, stalledTransferTimeout: TimeSpan.FromMilliseconds(150), audit: audit);
+            observation.Mark("later-status-asserted");
+        }, stalledTransferTimeout: TimeSpan.FromMilliseconds(150), audit: audit, observation: observation);
 
         Assert.Contains(audit.Outcomes, item => item.Operation == "Connection" && item.ErrorCode is "ipc_transfer_timeout" or "connection_rejected");
     }
@@ -835,7 +842,8 @@ public sealed class WindowsBrokerIntegrationTests
         IGatewayInvoker? gateway = null,
         IBrokerAuditSink? audit = null,
         TimeSpan? stalledTransferTimeout = null,
-        int? maximumPipeInstances = null)
+        int? maximumPipeInstances = null,
+        TimeoutObservation? observation = null)
     {
         using TestDirectory temporary = new();
         string pipeName = "SecureIntegration.Broker.Tests." + Guid.NewGuid().ToString("N");
@@ -867,7 +875,9 @@ public sealed class WindowsBrokerIntegrationTests
             : new(options, new ApplicationAuthorizer(options.Applications), new BrokerRequestDispatcher(application), selectedAudit,
                 stalledTransferTimeout ?? TimeSpan.FromSeconds(5), maximumPipeInstances ?? 32);
         using CancellationTokenSource stopped = new();
+        observation?.Mark("server-run-start");
         Task running = server.RunAsync(stopped.Token);
+        observation?.Mark("server-run-returned");
         BrokerClientOptions clientOptions = new() { PipeName = pipeName, ApplicationRegistrationId = policy.RegistrationId };
         if (operationTimeout is not null) clientOptions.OperationTimeout = operationTimeout.Value;
         // Transport fixture, not a service qualification. Pin the test-owned kernel process and pipe owner.
@@ -878,8 +888,10 @@ public sealed class WindowsBrokerIntegrationTests
         try { await test(client, pipeName); }
         finally
         {
+            observation?.Mark("server-stop-start");
             stopped.Cancel();
             await running;
+            observation?.Mark("server-accept-loop-stopped");
         }
     }
 
@@ -939,10 +951,17 @@ public sealed class WindowsBrokerIntegrationTests
         return IpcFrameCodec.Deserialize<BrokerResponse>(frame);
     }
 
-    private static async Task AssertPipeClosedAsync(NamedPipeClientStream pipe)
+    private static async Task AssertPipeClosedAsync(NamedPipeClientStream pipe, TimeoutObservation? observation = null)
     {
         using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(3));
-        Assert.Null(await IpcFrameCodec.ReadAsync(pipe, timeout.Token).ConfigureAwait(false));
+        observation?.Mark("observer-deadline-start-3000ms");
+        using CancellationTokenRegistration registration = observation is null ? default : timeout.Token.Register(() => observation.Mark("observer-deadline-cancelled"));
+        try
+        {
+            Assert.Null(await IpcFrameCodec.ReadAsync(pipe, timeout.Token).ConfigureAwait(false));
+            observation?.Mark("eof-asserted");
+        }
+        finally { observation?.Mark("eof-wait-exit"); }
     }
 
     private static async Task<int> ReadUntilClosedAsync(NamedPipeClientStream pipe)
@@ -1032,12 +1051,14 @@ public sealed class WindowsBrokerIntegrationTests
 
     private sealed class CapturingAudit : IBrokerAuditSink
     {
+        internal Action? ConnectionObserved { get; init; }
         private readonly System.Collections.Concurrent.ConcurrentQueue<AuditOutcome> events = new();
         public AuditOutcome[] Outcomes => events.ToArray();
         public IReadOnlyCollection<string> Events => events.Select(item => $"operation={item.Operation} application={item.ApplicationId} correlation={item.CorrelationId:D} succeeded={item.Succeeded} error={item.ErrorCode}").ToArray();
         public Task WriteAsync(string operation, string applicationId, Guid correlationId, bool succeeded, string? errorCode, CancellationToken cancellationToken)
         {
             events.Enqueue(new(operation, applicationId, correlationId, succeeded, errorCode));
+            if (operation == "Connection") ConnectionObserved?.Invoke();
             return Task.CompletedTask;
         }
     }

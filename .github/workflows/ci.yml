@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, codex/diagnose-windows-timeouts-5319d7d]
   pull_request:
 
 permissions:
@@ -13,6 +13,7 @@ env:
 
 jobs:
   governance:
+    if: github.ref != 'refs/heads/codex/diagnose-windows-timeouts-5319d7d'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,6 +36,8 @@ jobs:
         run: ./eng/Test-DcoSignoff.ps1 -BaseCommit '${{ github.event.pull_request.base.sha }}' -HeadCommit '${{ github.event.pull_request.head.sha }}'
 
   build-test:
+    env:
+      SIP_TIMEOUT_DIAGNOSTICS: ${{ runner.temp }}/timeout-observations
     strategy:
       matrix:
         os: [windows-latest]
@@ -72,6 +75,19 @@ jobs:
         run: |
           ./eng/Test-NamedTestResult.Tests.ps1
           ./eng/test.ps1 -ResultsDirectory $env:SIP_SUITE_RESULTS
+      - name: Retain only named timeout diagnostic results
+        if: always() && github.ref == 'refs/heads/codex/diagnose-windows-timeouts-5319d7d'
+        shell: pwsh
+        run: |
+          ./eng/Export-TimeoutObservation.ps1
+      - name: Upload reduced timeout observations
+        if: always() && github.ref == 'refs/heads/codex/diagnose-windows-timeouts-5319d7d'
+        uses: actions/upload-artifact@v4
+        with:
+          name: timeout-observations-${{ github.sha }}
+          path: ${{ runner.temp }}/timeout-observations/reduced.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Verify exact frozen FSE2 T03 result from the suite
         shell: pwsh
         run: |
@@ -137,6 +153,7 @@ jobs:
           ./eng/test-sbom-modes.ps1
 
   gitleaks:
+    if: github.ref != 'refs/heads/codex/diagnose-windows-timeouts-5319d7d'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -151,6 +168,7 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
 
   gateway-postgresql-18:
+    if: github.ref != 'refs/heads/codex/diagnose-windows-timeouts-5319d7d'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -336,6 +354,7 @@ jobs:
         run: docker exec "$POSTGRES_SERVICE_ID" psql -v ON_ERROR_STOP=1 -U postgres -d broker_gateway_test -c "DROP SCHEMA IF EXISTS gateway CASCADE;"
 
   gateway-container:
+    if: github.ref != 'refs/heads/codex/diagnose-windows-timeouts-5319d7d'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -474,6 +493,7 @@ jobs:
           if-no-files-found: error
 
   m3-deterministic-container-slice:
+    if: github.ref != 'refs/heads/codex/diagnose-windows-timeouts-5319d7d'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -653,6 +673,7 @@ jobs:
           retention-days: 30
 
   m4-connector-quickstart:
+    if: github.ref != 'refs/heads/codex/diagnose-windows-timeouts-5319d7d'
     runs-on: ubuntu-latest
     permissions:
       contents: read

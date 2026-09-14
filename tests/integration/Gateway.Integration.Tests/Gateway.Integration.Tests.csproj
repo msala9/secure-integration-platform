@@ -7,6 +7,7 @@
     <RootNamespace>SecureIntegration.Gateway.Integration.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../support/TimeoutObservation.cs" Link="TimeoutObservation.cs" />
     <ProjectReference Include="..\..\..\src\Gateway\Gateway.Api\Gateway.Api.csproj" />
     <ProjectReference Include="..\..\..\src\Gateway\Gateway.Infrastructure\Gateway.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\src\Gateway\Gateway.ConnectorRuntime.Auth.Http\Gateway.ConnectorRuntime.Auth.Http.csproj" />
