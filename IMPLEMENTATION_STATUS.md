@@ -1,8 +1,8 @@
 # Implementation dashboard
 
 Updated: 2026-09-14
-Software baseline integrated through PR #77:
-`b13e6ba781a90d331836d37ec363baf27248737f`.
+Software baseline integrated through PR #78:
+`5319d7d404b3c7b04f9810df87ff2757421e6a45`.
 This baseline includes application credential adoption, implementation simplification,
 Admin first access/responsive layout/UTC dates/operator guide and Broker/Direct
 onboarding alignment. Subsequent targeted security fixes, tenant audit export and
@@ -29,7 +29,7 @@ distinct levels. The integrated baseline does not replace the exact commit of a 
 | Broker → Gateway continuity | **Integrated through PR #68 — targeted synthetic E2E PASS** | Existing Broker identity records authoritative renewal lifecycle, renews single-flight, resumes after restart or a lost renewal response and reports uncertain remote outcomes as non-retryable. Evidence is an in-process Windows transport fixture over the real enrollment, authorization, Published Connector and Synthetic Provider services; it is not a Windows Service or PostgreSQL/live qualification. |
 | Windows x64 delivery | **Integrated through PR #69 — bounded real-service path** | Software `5ad048f...`: self-contained package, non-elevated local use, exact two-build envelope compatibility, restart/rejected-update preservation and real Broker → Gateway/PG/Synthetic Provider with outage recovery passed on Windows 10 Pro 22H2 x64 19045.6466. The account is a member of Administrators; baseline ordinary-token failure remains recorded. See the [observed scope](docs/user/local-broker.md#windows-delivery-observed-on-september-5-2026); no universal Windows, live renewal/DR or production claim. |
 | Application credential adoption | **Integrated through PR #70 — focused tests and real standard-account gate PASS** | Software `8909ab9...`, gate `9ab03c1...`: runtime input, private ciphertext-only storage, new-process use, replacement and failed-save preservation passed under a non-Administrators account. [Observed scope](docs/user/local-broker.md#application-credential-adoption-observed-on-september-6-2026). Application-owned per-Installation credential, not vendor secret retrieval, external authentication, a secretless client or actual management-app/CVD closure. |
-| Own-application Broker administration | **CANDIDATE PASS — BROKER-ADOPT branch, not integrated** | Software/package `4a8eb70...`: supported tooling registers, inspects, updates and revokes a named .NET application without hand-editing settings; distinct evaluation app passed the real Windows Service ordinary-account gate. This is candidate branch evidence, not main integration or release readiness. |
+| Own-application Broker administration | **Integrated through PR #78 — bounded ordinary-account service evidence** | Software/package `4a8eb70...`: supported tooling registers, inspects, updates and revokes a named .NET application without hand-editing settings; distinct evaluation app passed the real Windows Service ordinary-account gate. That exact-package evidence is reusable for unchanged properties; it does not qualify a fresh evaluation package or establish release readiness. |
 | Admin UI/API | **Integrated — guided Connector onboarding and operator usability** | First-session entry, responsive layout, explicit UTC dates, bundled guide and Broker/Direct selection are integrated. Five actions across three roles cover Installation/enrollment, definition, binding/grant, four-eyes and first invocation. `FULLSTACK-02` uses PostgreSQL 18 and synthetic identities; not production authentication. |
 | Authentication foundation | **Integrated** | Provider-neutral SOAP/session, JWT/X.509, signing and mTLS primitives; they do not automatically qualify an external service. |
 | Targeted security remediation | **Integrated** | Bounded Broker IPC admission and Azure readiness based on reading the configured secret, not metadata alone. These fixes do not establish absence of vulnerabilities, a Connector sandbox or general live-cloud qualification. |
@@ -45,13 +45,18 @@ distinct levels. The integrated baseline does not replace the exact commit of a 
 
 ## Next planned outcome
 
-BROKER-ADOPT branch work made registration, executable update and revocation of
-an adopter's own .NET application available through supported administrator tooling,
-reusing existing Broker policy and protection operations. The local candidate has
-focused static/settings evidence and a real ordinary-account Windows Service PASS on
-package `4a8eb70...`; it still needs focused review/integration before this dashboard
-can call it integrated. EVAL-DELIVERY follows with a versioned evaluation package
-and one focused success/recovery check. Neither outcome is integrated at this baseline.
+BROKER-ADOPT is integrated through PR #78 with focused review/micro-review reporting
+no P0/P1/P2 findings and DCO 11/11. Its ordinary-account Windows Service result
+remains attached to package `4a8eb70...`. EVAL-DELIVERY prepares two separate
+versioned evaluation artifacts and their success/recovery checks; it is not a release.
+
+PR #78 candidate General/M5 and exact-main M5 passed. Exact-main General Windows
+run `34823625320` failed twice on different tests. The closed investigation did not
+reproduce the failures and did not determine their historical cause; no runtime
+patch was justified. Diagnostic job `103918639919` in run `34826139817` passed on
+`e9c9f63280bc3fd175e41af9e160607c4ad59842`, with test/workflow instrumentation and
+unchanged runtime. That result is not an exact-main PASS. Complete exact-main
+qualification remains unresolved and separate from the new evaluation candidate.
 The development repository's current plan and backlog own the scope; optional
 integrations and enterprise mechanisms remain demand-driven.
 

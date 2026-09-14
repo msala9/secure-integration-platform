@@ -3,6 +3,9 @@
 **Audience:** new adopters.
 **Status:** CURRENT.
 
+Start with [Evaluate SIP](evaluation.md) for the two separate candidate packages,
+prerequisites, integrity checks and recovery.
+
 ## Running the Core locally
 
 Use the [local Core pilot](local-pilot.md), the primary evaluation path:
@@ -23,9 +26,10 @@ If interrupted, run `./tools/alpha/Invoke-AlphaGoldenPath.ps1 -Phase Stop`.
 ## Windows / Local Broker path
 
 The Direct pilot does not go through the Local Broker.
-[Existing Windows tests](https://github.com/marcobiz/secure-integration-platform/blob/main/docs/history/README.md#windows--local-broker-evidence)
-are historical laboratories using a real Windows Service, with dedicated prerequisites;
-they are not a second quickstart, an MSI or a new qualification of the current baseline.
+Use the self-contained [Windows package guide](../../deploy/windows/README.md)
+for administrator setup and ordinary-account use, including registration of the
+distinct adopter application. Historical real-service results keep their exact
+source/package scope; they do not qualify a new delivery automatically.
 
 ## Optional FSE2 OfficialTest pilot
 

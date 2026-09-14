@@ -54,6 +54,7 @@ docs/security/
 docs/testing/test-strategy.md
 docs/user/README.md
 docs/user/quickstart.md
+docs/user/evaluation.md
 docs/user/local-pilot.md
 docs/user/local-broker.md
 docs/user/administration.md

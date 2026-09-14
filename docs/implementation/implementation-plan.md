@@ -1,7 +1,7 @@
 # Implementation plan
 
 Updated: 2026-09-14
-Integrated software baseline: `b13e6ba781a90d331836d37ec363baf27248737f` (through PR #77).
+Integrated software baseline: `5319d7d404b3c7b04f9810df87ff2757421e6a45` (through PR #78).
 
 This is the current order of work. [IMPLEMENTATION_STATUS.md](../../IMPLEMENTATION_STATUS.md)
 owns integrated capability and qualification claims; the [backlog](backlog.md#current-work-order)
@@ -19,9 +19,9 @@ Execution and publication authority belong to the assigned task, not to a backlo
    through PRs #67–70; subsequent simplification, Admin first access/layout/operator
    guide, onboarding alignment, targeted security fixes and audit export/package
    preflight through PR #77. Do not restart these as separate development projects.
-2. **NOW — BROKER-ADOPT:** let an adopter register and maintain its own .NET
+2. **Integrated through PR #78 — BROKER-ADOPT:** let an adopter register and maintain its own .NET
    application through supported tooling, beyond the bundled `local-sample`.
-3. **NEXT — EVAL-DELIVERY:** prepare a versioned evaluation package with one
+3. **NOW — EVAL-DELIVERY:** prepare a versioned evaluation package with one
    documented success/recovery path and one proportionate convergence check.
 4. **DEFERRED:** new integrations, platforms and enterprise mechanisms require
    a concrete consumer or defect; see the [backlog triggers](backlog.md#deferred-work-triggers).
@@ -30,14 +30,15 @@ Integrated software, synthetic tests, selected Windows service observations and
 external-service qualification remain separate. Updating this plan does not repeat
 or extend the exact-candidate qualifications recorded below.
 
-## NOW — supported onboarding of an adopter's application
+## Integrated — supported onboarding of an adopter's application
 
 The runtime already accepts explicit application registrations, and the SDK already
 exposes `ProtectData`/`UnprotectData`. The original gap was supported administration:
 the Windows delivery script installed `local-sample` and updated its executable hash.
-The current BROKER-ADOPT candidate adds supported register/inspect/update/revoke
-tooling and a distinct .NET evaluation app. Package `4a8eb70...` passed the required
-ordinary-account real-service proof; it remains pending focused review/integration.
+BROKER-ADOPT adds supported register/inspect/update/revoke tooling and a distinct
+.NET evaluation app, integrated through PR #78. Package `4a8eb70...` passed the
+ordinary-account real-service proof; integration does not change its source identity
+or establish complete exact-main qualification.
 
 Deliver one small, administrator-operated path to register, inspect, update and
 revoke a named application, reusing the existing configuration, policy and SDK.
@@ -71,7 +72,7 @@ native/COM adapter or automatic key rotation is required. Prefer the narrowest
 extension of existing Windows tooling; a new runtime primitive needs an observed
 blocker and an explicit complexity checkpoint.
 
-## NEXT — versioned evaluation delivery
+## NOW — versioned evaluation delivery
 
 After BROKER-ADOPT converges, select the exact artifact and supported target; package
 the existing software, concise setup/verification/recovery instructions, known limits
@@ -245,7 +246,7 @@ the selected case; a new Connector needs concrete demand and separate authorizat
 
 ## Ownership, measurement and verification
 
-One implementation owner carries BROKER-ADOPT end-to-end from the integrated plan.
+One implementation owner carries EVAL-DELIVERY end-to-end from the integrated plan.
 Estimate implementation, verification/laboratory and evidence separately; freeze
 the visible result and essential negatives before coding. Do not split the result
 into a chain of micro-PRs or writer/reviewer handoffs. Parallel work is useful only
