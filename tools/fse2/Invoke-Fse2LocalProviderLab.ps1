@@ -133,6 +133,7 @@ function Set-LabEnvironment {
         FSE2_PROVIDER_MATERIAL_DIRECTORY = $materialRoot
         FSE2_TEST_ENVIRONMENT_ID = $EnvironmentId.ToString('D')
         M3_PRIMARY_ENVIRONMENT_ID = $EnvironmentId.ToString('D')
+        M3_SECURITY_ENVIRONMENT_ID = [Guid]::NewGuid().ToString('D')
         FSE2_AUTH_CERT_VERSION = [string]$auth[0].version
         FSE2_SIGN_CERT_VERSION = [string]$sign[0].version
         FSE2_CONNECTOR_SCOPE = $ConnectorScope

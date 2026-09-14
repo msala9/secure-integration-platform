@@ -67,6 +67,7 @@ $values = [ordered]@{
     FSE2_PROVIDER_MATERIAL_DIRECTORY = $material.FullPath
     FSE2_TEST_ENVIRONMENT_ID = $environmentId
     M3_PRIMARY_ENVIRONMENT_ID = $environmentId
+    M3_SECURITY_ENVIRONMENT_ID = [Guid]::NewGuid().ToString('D')
     FSE2_AUTH_CERT_VERSION = $AuthCertificateVersion
     FSE2_SIGN_CERT_VERSION = $SignCertificateVersion
     FSE2_CONTAINER_RUNTIME_UID = '1654'
