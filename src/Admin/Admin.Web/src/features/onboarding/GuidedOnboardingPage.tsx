@@ -71,7 +71,7 @@ export function GuidedOnboardingPage() {
     history.replace({ pathname: location.pathname, search: parameters.toString() });
   };
   const selectTenant = (value: string) => { setTenantId(value); setInstallationId(''); replaceTarget({ tenant: value, installation: '' }); };
-  const selectEnvironment = (value: string) => { setEnvironmentId(value); replaceTarget({ environment: value }); };
+  const selectEnvironment = (value: string) => { const application = selectedInstallation?.applicationId ?? applicationId; setApplicationId(application); setEnvironmentId(value); setInstallationId(''); replaceTarget({ application, environment: value, installation: '' }); };
   const selectInstallation = (value: string) => {
     setInstallationId(value);
     replaceTarget({ installation: value });
@@ -232,8 +232,8 @@ export function GuidedOnboardingPage() {
       <Stack spacing={2}>
         <PagedSelector id="guided-tenant" label={t('selectTenant')} value={tenantId} page={tenants.data!} onChange={selectTenant} onOffset={setTenantOffset} itemLabel={item => item.displayName} />
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <PagedSelector id="guided-application" label={t('application')} value={applicationId} page={applications.data!} onChange={value => { setApplicationId(value); replaceTarget({ application: value }); }} onOffset={setApplicationOffset} itemLabel={item => item.displayName} />
-          <PagedSelector id="guided-environment" label={t('environment')} value={environmentId} page={environments.data!} onChange={selectEnvironment} onOffset={setEnvironmentOffset} itemLabel={item => item.displayName} />
+          <PagedSelector id="guided-application" label={t('application')} value={selectedInstallation?.applicationId ?? applicationId} page={applications.data!} onChange={value => { setApplicationId(value); setEnvironmentId(effectiveEnvironmentId); setInstallationId(''); replaceTarget({ application: value, environment: effectiveEnvironmentId, installation: '' }); }} onOffset={setApplicationOffset} itemLabel={item => item.displayName} />
+          <PagedSelector id="guided-environment" label={t('environment')} value={effectiveEnvironmentId} page={environments.data!} onChange={selectEnvironment} onOffset={setEnvironmentOffset} itemLabel={item => item.displayName} />
         </Stack>
         {tenantId && installations.data && <PagedSelector id="guided-installation" label={t('installation')} value={installationId} page={installations.data} selectedItem={selectedInstallation} onChange={selectInstallation} onOffset={setInstallationOffset} itemLabel={item => `${item.installationKind} · ${item.status} · ${formatDate(item.createdAt)}`} />}
         <PagedSelector id="guided-connector" label={t('connector')} value={connectorId} page={connectors.data!} onChange={selectConnector} onOffset={setConnectorOffset} itemLabel={item => item.displayName} itemValue={item => item.connectorId} />

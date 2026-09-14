@@ -2,6 +2,7 @@ services:
   provisioner:
     environment:
       M5_POSTGRES_ADMIN_API_PASSWORD: ${M5_POSTGRES_ADMIN_API_PASSWORD:?required}
+      M3_SECURITY_ENVIRONMENT_ID: ${M3_SECURITY_ENVIRONMENT_ID:?required}
   gateway:
     ports:
       - "127.0.0.1:${M5_GATEWAY_PORT:-18443}:8443"
@@ -19,4 +20,12 @@ services:
       Gateway__EndpointResources__0__LogicalBindingId: sample-vendor-endpoint
       Gateway__EndpointResources__0__Endpoint: https://vendor.m3.test:8443/
       Gateway__EndpointResources__0__Revision: "1"
+      Gateway__EndpointResources__1__EndpointId: m3-security-sample-vendor
+      Gateway__EndpointResources__1__DisplayName: M3 security synthetic vendor
+      Gateway__EndpointResources__1__EnvironmentId: ${M3_SECURITY_ENVIRONMENT_ID:?required}
+      Gateway__EndpointResources__1__ConnectorScope: sample-secure-service
+      Gateway__EndpointResources__1__OperationScope: submit
+      Gateway__EndpointResources__1__LogicalBindingId: sample-vendor-endpoint
+      Gateway__EndpointResources__1__Endpoint: https://vendor.m3.test:8443/
+      Gateway__EndpointResources__1__Revision: "1"
       ConnectionStrings__GatewayAdminDatabase: Host=postgres;Port=5432;Database=broker_gateway_m3;Username=m5_gateway_admin;Password=${M5_POSTGRES_ADMIN_API_PASSWORD:?required};SSL Mode=Disable;GSS Encryption Mode=Disable

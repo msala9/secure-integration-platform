@@ -33,6 +33,7 @@ using X509Certificate2 wrongVendorClient = CreateIssued("CN=M3 Wrong Vendor Clie
 using X509Certificate2 securityDriver = CreateIssued("CN=M3 Security Driver Installation", [], true, ca, now);
 using X509Certificate2 onboardingDriver = CreateIssued("CN=M5 Guided Onboarding Installation", [], true, ca, now);
 Guid primaryEnvironmentId = Guid.NewGuid();
+Guid securityEnvironmentId = Guid.NewGuid();
 
 await File.WriteAllTextAsync(Path.Combine(certificateDirectory, "ca.crt"), ca.ExportCertificatePem()).ConfigureAwait(false);
 await File.WriteAllBytesAsync(Path.Combine(certificateDirectory, "gateway.pfx"), gateway.Export(X509ContentType.Pkcs12, certificatePassword)).ConfigureAwait(false);
@@ -60,7 +61,8 @@ Dictionary<string, string> values = new(StringComparer.Ordinal)
     ["M3_VENDOR_CLIENT_THUMBPRINT"] = vendorClient.Thumbprint,
     ["M3_VENDOR_CLIENT_PFX_BASE64"] = Convert.ToBase64String(vendorClient.Export(X509ContentType.Pkcs12)),
     ["M3_WRONG_VENDOR_CLIENT_PFX_BASE64"] = Convert.ToBase64String(wrongVendorClient.Export(X509ContentType.Pkcs12)),
-    ["M3_PRIMARY_ENVIRONMENT_ID"] = primaryEnvironmentId.ToString("D")
+    ["M3_PRIMARY_ENVIRONMENT_ID"] = primaryEnvironmentId.ToString("D"),
+    ["M3_SECURITY_ENVIRONMENT_ID"] = securityEnvironmentId.ToString("D")
 };
 string environmentPath = Path.Combine(rawDirectory, "m3a.env");
 await File.WriteAllLinesAsync(environmentPath, values.Select(pair => pair.Key + "=" + pair.Value)).ConfigureAwait(false);

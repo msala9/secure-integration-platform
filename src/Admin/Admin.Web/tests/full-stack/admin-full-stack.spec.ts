@@ -314,7 +314,10 @@ test('FULLSTACK-02 guided onboarding reaches one real invocation in five resumab
   const environments = await api<{ items: Array<{ id: string }> }>(security, '/admin/api/v1/environments?offset=0&limit=50');
   const otherEnvironment = environments.body.items.find(value => value.id !== endpoint.environmentId);
   expect(otherEnvironment).toBeTruthy();
-  const wrongEnvironmentCatalog = await api<{ items: unknown[] }>(security, `/admin/api/v1/endpoint-resources?environmentId=${otherEnvironment!.id}&connectorId=sample-secure-service`);
+  const securityEnvironmentCatalog = await api<{ items: Array<{ environmentId: string; logicalBindingId: string }> }>(security, `/admin/api/v1/endpoint-resources?environmentId=${otherEnvironment!.id}&connectorId=sample-secure-service`);
+  expect(securityEnvironmentCatalog.body.items).toHaveLength(1);
+  expect(securityEnvironmentCatalog.body.items[0]).toMatchObject({ environmentId: otherEnvironment!.id, logicalBindingId: 'sample-vendor-endpoint' });
+  const wrongEnvironmentCatalog = await api<{ items: unknown[] }>(security, '/admin/api/v1/endpoint-resources?environmentId=00000000-0000-0000-0000-000000000099&connectorId=sample-secure-service');
   expect(wrongEnvironmentCatalog.body.items).toEqual([]);
   const endpointDrift = await api<Record<string, unknown>>(security, '/admin/api/v1/connectors/sample-secure-service/bindings', 'PUT', {
     ...bindingRequest, endpointResources: { 'sample-vendor-endpoint': { ...endpointAssertion, revision: endpointAssertion.revision + 1 } }

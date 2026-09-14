@@ -45,6 +45,31 @@ beforeEach(async () => {
 afterEach(cleanup);
 
 describe('guided selection and targeted refresh', () => {
+  it('shows the Installation application and environment instead of stale URL selections after reload', async () => {
+    const assertTarget = async () => {
+      await screen.findByRole('button', { name: i18n.t('requestApproval') });
+      expect(screen.getByRole('combobox', { name: i18n.t('application') })).toHaveTextContent(installation.applicationId);
+      expect(screen.getByRole('combobox', { name: i18n.t('environment') })).toHaveTextContent(installation.environmentId);
+      expect(screen.getByRole('combobox', { name: i18n.t('environment') })).not.toHaveTextContent('untrusted-url-environment');
+    };
+    const first = mount(target + '&application=stale-application');
+    await assertTarget();
+    const resume = first.history.location.pathname + first.history.location.search;
+    first.unmount(); first.cache.clear();
+    mount(resume);
+    await assertTarget();
+  });
+
+  it('clears the selected Installation when the operator changes environment', async () => {
+    vi.mocked(adminApi.environments).mockResolvedValue(page([{ id: 'new-environment', code: 'new', displayName: 'New environment', productionControls: false }]));
+    const { history } = mount();
+    await screen.findByRole('button', { name: i18n.t('requestApproval') });
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: i18n.t('environment') }));
+    fireEvent.click(await screen.findByRole('option', { name: 'New environment' }));
+    expect(new URLSearchParams(history.location.search).has('installation')).toBe(false);
+    expect(screen.getByRole('combobox', { name: i18n.t('environment') })).toHaveTextContent('New environment');
+  });
+
   it.each(['Pending', 'Active'] as const)('keeps Published readiness consistent with %s enrollment after reload', async status => {
     vi.mocked(adminApi.installation).mockResolvedValue({ ...installation, status });
     vi.mocked(adminApi.connectorVersion).mockResolvedValue({ ...version, state: 'Published' });

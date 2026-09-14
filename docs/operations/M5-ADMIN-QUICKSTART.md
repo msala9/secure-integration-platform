@@ -87,6 +87,13 @@ Reload between phases to check resume. The pre-published `1.0.0` sample alone do
 not exercise these role handoffs. Finish by inspecting Audit and Health; an Admin
 ready banner alone is not evidence of a Runtime API invocation.
 
+The `Start` inspection path enrolls the Broker in **M3 Security Driver Tenant**,
+application **M3 Security Driver**, environment **M3 Security Tests**. Select that
+Active Installation for the manual role workflow. The sample endpoint catalog is
+available in both M3 environments, scoped to `sample-secure-service` / `submit`;
+the security environment's credential and certificate remain separate catalog
+records. A primary-environment Pending Installation still requires enrollment.
+
 The browser never receives provider secret values, private keys or arbitrary runtime URLs. PostgreSQL, synthetic provider and mock HTTPS/mTLS service stay on the private Compose network; only Gateway HTTPS is intended for the browser.
 
 Cleanup:

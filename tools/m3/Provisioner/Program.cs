@@ -122,7 +122,7 @@ await registry.AddGrantAsync(new InstallationGrantRecord(Guid.NewGuid(), directI
 Guid securityInstallationId = Guid.NewGuid();
 Guid securityTenantId = Guid.NewGuid();
 Guid securityApplicationId = Guid.NewGuid();
-Guid securityEnvironmentId = Guid.NewGuid();
+Guid securityEnvironmentId = OptionalGuid("M3_SECURITY_ENVIRONMENT_ID") ?? Guid.NewGuid();
 ProvisionedActivation securityActivation = await provisioning.CreateInstallationAsync(
     new TenantRecord(securityTenantId, "m3-security-tenant", "M3 Security Driver Tenant", TenantStatus.Active, clock.UtcNow),
     new ApplicationRecord(securityApplicationId, "m3-security-driver", "M3 Security Driver", ApplicationStatus.Active, "1.0.0", null, clock.UtcNow),

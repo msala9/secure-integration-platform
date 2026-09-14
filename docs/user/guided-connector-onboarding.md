@@ -36,6 +36,9 @@ Guided onboarding and **Installations** use the same choice and descriptions:
 
 Selecting an existing Installation reads its type from the server and disables the
 type selector. It does not convert the Installation or change its Environment.
+Application and Environment also show the selected Installation's server-owned
+values, including after reload. Changing either selector clears the Installation
+selection; it does not move an existing Installation into the new context.
 Choosing Broker does not install the Windows service. Complete enrollment outside
 the browser with the supported Broker or Direct client tooling before continuing.
 The five administrative actions and role separation are the same for both types;
