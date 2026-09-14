@@ -2,6 +2,7 @@ import type { enTranslation } from './en';
 
 export const itTranslation = {
   guidedInstallationContext: 'Contesto dell’installazione', guidedConnectorContext: 'Connettore da configurare',
+  selectorOpen: 'Mostra opzioni', selectorClear: 'Cancella selezione',
   selectorSearchNameCode: 'Nome o codice', selectorSearchId: 'ID installazione', selectorNoResults: 'Nessun risultato corrispondente',
   guidedContinue: 'Vai alla prossima azione', guidedContextHelp: 'Scrivi un nome o codice nel campo e scegli un risultato. Le installazioni disponibili dipendono da tenant, applicazione e ambiente selezionati.',
   guidedRuntimeDirect: 'Apri la procedura di invocazione Direct', guidedRuntimeBroker: 'Apri la procedura di invocazione Broker',

@@ -28,6 +28,7 @@ export function PagedSelector<T>({ id, label, value, page, selectedItem, onChang
       options={busy ? [] : [...(value && !selectedOnPage ? [value] : []), ...page.items.map(optionValue)]}
       getOptionLabel={optionLabel} filterOptions={options => options}
       loading={busy} loadingText={t('loading')} noOptionsText={t('selectorNoResults')}
+      openText={t('selectorOpen')} closeText={t('close')} clearText={t('selectorClear')}
       onInputChange={(_, text, reason) => { if (reason === 'input' || reason === 'clear') search.onChange(text); }}
       onChange={(_, selected) => { if (!busy) { onChange(selected ?? ''); search.onChange(''); } }}
       renderOption={(props, option) => { const { key, ...rest } = props; return <li key={key} {...rest} style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{optionLabel(option)}</li>; }}

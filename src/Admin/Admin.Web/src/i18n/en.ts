@@ -1,5 +1,6 @@
 export const enTranslation = {
   guidedInstallationContext: 'Installation context', guidedConnectorContext: 'Connector to configure',
+  selectorOpen: 'Show choices', selectorClear: 'Clear selection',
   selectorSearchNameCode: 'Name or code', selectorSearchId: 'Installation ID', selectorNoResults: 'No matching results',
   guidedContinue: 'Go to the next action', guidedContextHelp: 'Type a name or code in a field, then choose a matching result. Installation choices follow your tenant, application and environment.',
   guidedRuntimeDirect: 'Open the Direct invocation procedure', guidedRuntimeBroker: 'Open the Broker invocation procedure',
