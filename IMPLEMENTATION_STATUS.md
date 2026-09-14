@@ -68,8 +68,8 @@ PR #79 on `2c2ff27...`. The frozen deliverables and observed scopes remain separ
   distinct-role approval/publication, F5 persistence and searchable keyboard operation.
   The Installation was already Active; this does not prove new enrollment or manual
   runtime invocation of the inspected version. Narrow layout and UTC dates are
-  automated evidence. The [traceability map](docs/traceability/requirements-traceability.md#evaluation-delivery-integrated-through-pr-79)
-  identifies the named checks and retained candidate record.
+  automated evidence. The development repository retains the named checks and
+  redacted qualification records.
 - **Dependencies:** js-yaml 4.3.2 resolves the observed high advisory. Two moderate
   Vitest/mocker development-tool advisories remain deferred; no zero-vulnerability claim.
 
