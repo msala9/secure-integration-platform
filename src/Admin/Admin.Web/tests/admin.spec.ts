@@ -139,19 +139,18 @@ test('UI-MOCK-46 guided server search is bounded and keyboard usable in a narrow
   });
   await page.route(`**/admin/api/v1/tenants/${remote.id}`, route => route.fulfill({ json: remote }));
   await page.goto('./onboarding');
-  const search = page.getByRole('searchbox', { name: 'Search Select a tenant', exact: true });
+  const search = page.getByRole('combobox', { name: 'Select a tenant', exact: true });
   await search.fill('remote');
   const selector = page.getByRole('combobox', { name: 'Select a tenant', exact: true });
   await expect.poll(() => requests.some(url => url.searchParams.get('filter') === 'remote')).toBe(true);
   await expect(selector).toBeEnabled();
-  await search.press('Tab');
   await expect(selector).toBeFocused();
   await selector.press('ArrowDown');
   await expect(page.getByRole('option', { name: 'Remote tenant · remote-9999' })).toBeVisible();
   await page.keyboard.press('Enter');
-  await expect(selector).toContainText('Remote tenant · remote-9999');
+  await expect(selector).toHaveValue('Remote tenant · remote-9999');
   await page.reload();
-  await expect(selector).toContainText('Remote tenant · remote-9999');
+  await expect(selector).toHaveValue('Remote tenant · remote-9999');
   expect(requests.every(url => Number(url.searchParams.get('limit')) <= 50)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   const axe = await new AxeBuilder({ page }).analyze();
@@ -185,7 +184,7 @@ for (const screen of ['Installations', 'Guided onboarding']) {
       await expect(page.getByRole('textbox', { name: 'Activation code ID', exact: true })).toBeVisible();
       await page.getByRole('button', { name: 'Close', exact: true }).click();
       if (screen === 'Guided onboarding') {
-        await expect(page.getByRole('combobox', { name: 'Installation', exact: true })).toContainText(kind);
+        await expect(page.getByRole('combobox', { name: 'Installation', exact: true })).toHaveValue(new RegExp(kind));
         await expect(selector).toHaveCount(0);
         await expect(page.getByRole('button', { name: 'Create installation', exact: true })).toHaveCount(0);
       }
@@ -211,10 +210,10 @@ test('UI-MOCK-45 guided resume keeps the existing server-owned Broker kind after
   page.on('request', request => { if (request.method() === 'POST') mutations++; });
   await page.goto(`./onboarding?tenant=${tenant.id}&installation=${installationId}&installationKind=Direct`);
   const selector = page.getByRole('combobox', { name: 'Installation', exact: true });
-  await expect(selector).toContainText('Broker');
+  await expect(selector).toHaveValue(/Broker/);
 
   await page.reload();
-  await expect(selector).toContainText('Broker');
+  await expect(selector).toHaveValue(/Broker/);
 
   await expect(page.getByRole('button', { name: 'Create installation', exact: true })).toHaveCount(0);
   expect(mutations).toBe(0);
@@ -229,7 +228,7 @@ for (const kind of ['Direct', 'Broker']) {
       environmentId: '50000000-0000-0000-0000-000000000001', installationKind: kind, status: 'Active', createdAt: '2026-09-14T23:30:00-02:00'
     } }));
     await page.goto(`./onboarding?tenant=${tenant.id}&installation=${installationId}&connector=sample-secure-service&version=2.0.0`);
-    await expect(page.getByRole('combobox', { name: 'Installation', exact: true })).toContainText(`${kind} · Active · 15 Sep 2026`);
+    await expect(page.getByRole('combobox', { name: 'Installation', exact: true })).toHaveValue(new RegExp(`${kind} · Active · 15 Sep 2026`));
     await expect(page.getByRole('button', { name: 'Create installation', exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Validate and import', exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);

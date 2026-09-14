@@ -1,8 +1,9 @@
 import type { enTranslation } from './en';
 
 export const itTranslation = {
-  selectorSearch: 'Cerca {{label}}', selectorSearchNameCode: 'Nome o codice', selectorSearchId: 'ID installazione', selectorNoResults: 'Nessun risultato corrispondente',
-  guidedContinue: 'Vai alla prossima azione', guidedContextHelp: 'Cerca nel catalogo e seleziona un risultato. Applicazioni e ambienti sono cataloghi condivisi; le installazioni sono filtrate per il contesto selezionato.',
+  guidedInstallationContext: 'Contesto dell’installazione', guidedConnectorContext: 'Connettore da configurare',
+  selectorSearchNameCode: 'Nome o codice', selectorSearchId: 'ID installazione', selectorNoResults: 'Nessun risultato corrispondente',
+  guidedContinue: 'Vai alla prossima azione', guidedContextHelp: 'Scrivi un nome o codice nel campo e scegli un risultato. Le installazioni disponibili dipendono da tenant, applicazione e ambiente selezionati.',
   guidedRuntimeDirect: 'Apri la procedura di invocazione Direct', guidedRuntimeBroker: 'Apri la procedura di invocazione Broker',
   guidedDirectPrepare: 'Usa l’applicazione Direct già registrata per questa installazione Active, con il suo certificato client e la chiave protetta. Il login Admin non è una credenziale runtime. L’applicazione deve considerare attendibile il certificato Gateway e avere il grant per l’operazione esatta.',
   guidedDirectInvoke: 'Da tale applicazione invia una richiesta BGW1 firmata tramite mTLS a POST /v1/connectors/{connectorId}/operations/{operationId}:invoke, usando il contratto InvokeRequest supportato. Usa connettore/operazione autorizzati e un payload sintetico limitato; verifica la ConnectorVersion effettiva nel risultato. L’esempio DirectGatewayClient nel pacchetto di valutazione dimostra il protocollo: registra una nuova identità temporanea e non riutilizza la chiave di un’installazione esistente.',

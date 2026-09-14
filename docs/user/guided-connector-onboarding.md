@@ -20,7 +20,8 @@ The next action appears first, with the required role and a link to its controls
 Completed action forms are hidden. When ready, the primary link opens the matching
 Direct or Broker invocation procedure in the bundled Documentation page.
 
-Search Tenant, Application and Environment by name or code. Results come from the
+Each choice uses one searchable field: type a name or code and select a result.
+Installation context and Connector selection have separate headings. Results come from the
 server in pages of 50; matching names show their distinct codes, and selection uses
 the immutable ID. Search is literal, case-insensitive and limited to 100 characters.
 Applications and Environments remain shared catalogs under the existing global

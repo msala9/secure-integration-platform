@@ -54,7 +54,7 @@ describe('guided selection and targeted refresh', () => {
       return filter === 'remote' ? page([tenant(offset ? 9999 : 9998)], offset, 51) : page([tenant(0)], 0, 10000);
     });
     const { history } = mount();
-    fireEvent.change(await screen.findByRole('searchbox', { name: 'Search Select a tenant' }), { target: { value: 'remote' } });
+    fireEvent.change(await screen.findByRole('combobox', { name: 'Select a tenant' }), { target: { value: 'remote' } });
     await waitFor(() => expect(adminApi.tenants).toHaveBeenCalledWith(0, 50, 'remote'));
     await waitFor(() => expect(screen.getByRole('combobox', { name: i18n.t('selectTenant') })).not.toHaveAttribute('aria-disabled', 'true'));
     fireEvent.mouseDown(screen.getByRole('combobox', { name: i18n.t('selectTenant') }));
@@ -76,14 +76,14 @@ describe('guided selection and targeted refresh', () => {
     let resolveOld!: (value: Awaited<ReturnType<typeof adminApi.tenants>>) => void;
     vi.mocked(adminApi.tenants).mockImplementation(async (_offset, _limit, filter) => filter === 'old' ? new Promise(resolve => { resolveOld = resolve; }) : page([]));
     mount('/onboarding');
-    const search = await screen.findByRole('searchbox', { name: 'Search Select a tenant' });
+    const search = await screen.findByRole('combobox', { name: 'Select a tenant' });
     fireEvent.change(search, { target: { value: 'old' } });
     await waitFor(() => expect(resolveOld).toBeDefined());
     fireEvent.change(search, { target: { value: 'new' } });
     await waitFor(() => expect(adminApi.tenants).toHaveBeenCalledWith(0, 50, 'new'));
     resolveOld(page([{ id: 'old-id', code: 'old', displayName: 'Obsolete tenant', status: 'Active', createdAt: installation.createdAt, rowVersion: 1 }]));
     await waitFor(() => expect(screen.getByRole('combobox', { name: i18n.t('selectTenant') })).not.toHaveAttribute('aria-disabled', 'true'));
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: i18n.t('selectTenant') }));
+    fireEvent.keyDown(search, { key: 'ArrowDown' });
     expect(await screen.findByText(i18n.t('selectorNoResults'))).toBeVisible();
     expect(screen.queryByRole('option', { name: /Obsolete tenant/ })).not.toBeInTheDocument();
   });
@@ -91,9 +91,9 @@ describe('guided selection and targeted refresh', () => {
   it('shows the Installation application and environment instead of stale URL selections after reload', async () => {
     const assertTarget = async () => {
       await screen.findByRole('button', { name: i18n.t('requestApproval') });
-      expect(screen.getByRole('combobox', { name: i18n.t('application') })).toHaveTextContent('Selected application');
-      expect(screen.getByRole('combobox', { name: i18n.t('environment') })).toHaveTextContent(installation.environmentId);
-      expect(screen.getByRole('combobox', { name: i18n.t('environment') })).not.toHaveTextContent('untrusted-url-environment');
+      expect(screen.getByRole('combobox', { name: i18n.t('application') })).toHaveProperty('value', expect.stringContaining('Selected application'));
+      expect(screen.getByRole('combobox', { name: i18n.t('environment') })).toHaveValue(installation.environmentId);
+      expect(screen.getByRole('combobox', { name: i18n.t('environment') })).not.toHaveProperty('value', expect.stringContaining('untrusted-url-environment'));
     };
     const first = mount(target + '&application=stale-application');
     await assertTarget();
@@ -110,7 +110,7 @@ describe('guided selection and targeted refresh', () => {
     fireEvent.mouseDown(screen.getByRole('combobox', { name: i18n.t('environment') }));
     fireEvent.click(await screen.findByRole('option', { name: 'New environment · new' }));
     expect(new URLSearchParams(history.location.search).has('installation')).toBe(false);
-    expect(screen.getByRole('combobox', { name: i18n.t('environment') })).toHaveTextContent('New environment');
+    expect(screen.getByRole('combobox', { name: i18n.t('environment') })).toHaveProperty('value', expect.stringContaining('New environment'));
   });
 
   it.each(['Pending', 'Active'] as const)('keeps Published readiness consistent with %s enrollment after reload', async status => {
@@ -133,8 +133,8 @@ describe('guided selection and targeted refresh', () => {
   it('keeps authoritative selections visible while changing list pages', async () => {
     mount();
     expect(await screen.findByRole('button', { name: i18n.t('requestApproval') })).toBeEnabled();
-    expect(screen.getByRole('combobox', { name: i18n.t('version') })).toHaveTextContent('1.0.51');
-    expect(screen.getByRole('combobox', { name: i18n.t('installation') })).toHaveTextContent('Direct');
+    expect(screen.getByRole('combobox', { name: i18n.t('version') })).toHaveProperty('value', expect.stringContaining('1.0.51'));
+    expect(screen.getByRole('combobox', { name: i18n.t('installation') })).toHaveProperty('value', expect.stringContaining('Direct'));
     expect(adminApi.bindings).toHaveBeenCalledWith('sample', version.version, installation.environmentId);
     expect(adminApi.bindings).not.toHaveBeenCalledWith('sample', version.version, 'untrusted-url-environment');
     fireEvent.click(within(screen.getByTestId('guided-version-pagination')).getByRole('button', { name: i18n.t('nextPage') }));
@@ -143,8 +143,8 @@ describe('guided selection and targeted refresh', () => {
     fireEvent.click(within(screen.getByTestId('guided-version-pagination')).getByRole('button', { name: i18n.t('previousPage') }));
     fireEvent.click(within(screen.getByTestId('guided-installation-pagination')).getByRole('button', { name: i18n.t('nextPage') }));
     await waitFor(() => expect(adminApi.installations).toHaveBeenCalledWith('tenant', 50, 50, '', '', 'untrusted-url-environment'));
-    expect(screen.getByRole('combobox', { name: i18n.t('version') })).toHaveTextContent('1.0.51');
-    expect(screen.getByRole('combobox', { name: i18n.t('installation') })).toHaveTextContent('Direct');
+    expect(screen.getByRole('combobox', { name: i18n.t('version') })).toHaveProperty('value', expect.stringContaining('1.0.51'));
+    expect(screen.getByRole('combobox', { name: i18n.t('installation') })).toHaveProperty('value', expect.stringContaining('Direct'));
   });
 
   it('resolves deep-link selections again after reload with a new query cache', async () => {
@@ -154,8 +154,8 @@ describe('guided selection and targeted refresh', () => {
     first.unmount(); first.cache.clear();
     mount(resume);
     expect(await screen.findByRole('button', { name: i18n.t('requestApproval') })).toBeEnabled();
-    expect(screen.getByRole('combobox', { name: i18n.t('installation') })).toHaveTextContent('Direct');
-    expect(screen.getByRole('combobox', { name: i18n.t('version') })).toHaveTextContent('1.0.51');
+    expect(screen.getByRole('combobox', { name: i18n.t('installation') })).toHaveProperty('value', expect.stringContaining('Direct'));
+    expect(screen.getByRole('combobox', { name: i18n.t('version') })).toHaveProperty('value', expect.stringContaining('1.0.51'));
     expect(adminApi.installation).toHaveBeenCalledTimes(2);
     expect(adminApi.connectorVersion).toHaveBeenCalledTimes(2);
     expect(adminApi.bindings).not.toHaveBeenCalledWith('sample', version.version, 'untrusted-url-environment');

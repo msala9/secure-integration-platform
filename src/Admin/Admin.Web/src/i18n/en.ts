@@ -1,6 +1,7 @@
 export const enTranslation = {
-  selectorSearch: 'Search {{label}}', selectorSearchNameCode: 'Name or code', selectorSearchId: 'Installation ID', selectorNoResults: 'No matching results',
-  guidedContinue: 'Go to the next action', guidedContextHelp: 'Search the catalog, then select a result. Applications and environments are shared catalogs; installations are filtered by the selected context.',
+  guidedInstallationContext: 'Installation context', guidedConnectorContext: 'Connector to configure',
+  selectorSearchNameCode: 'Name or code', selectorSearchId: 'Installation ID', selectorNoResults: 'No matching results',
+  guidedContinue: 'Go to the next action', guidedContextHelp: 'Type a name or code in a field, then choose a matching result. Installation choices follow your tenant, application and environment.',
   guidedRuntimeDirect: 'Open the Direct invocation procedure', guidedRuntimeBroker: 'Open the Broker invocation procedure',
   guidedDirectPrepare: 'Use the enrolled Direct application for this Active Installation, with its client certificate and protected key. Admin login is not a runtime credential. The application must trust the Gateway certificate and have the exact operation grant.',
   guidedDirectInvoke: 'From that application, send one signed BGW1 request over mTLS to POST /v1/connectors/{connectorId}/operations/{operationId}:invoke using the supported InvokeRequest contract. Use the allowed connector/operation and a bounded synthetic payload; check the actual ConnectorVersion in the result. The DirectGatewayClient sample in the evaluation package demonstrates this protocol; it enrolls a new disposable identity and is not a way to reuse an existing Installation key.',
