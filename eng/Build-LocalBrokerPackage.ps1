@@ -20,6 +20,20 @@ $version = ([xml](Get-Content -LiteralPath (Join-Path $root 'Directory.Build.pro
 $packageName = 'local-broker-' + $version + '-win-x64-' + $head.Substring(0, 12)
 $stage = Join-Path $output $packageName
 New-Item -ItemType Directory -Path $stage | Out-Null
+# Pin only the .NET runtime: the global RuntimeFrameworkVersion property also
+# changes Microsoft.Windows.SDK.NET.Ref and makes its restore inconsistent.
+$packageRuntimeVersion = '10.0.12'
+$runtimeTargets = Join-Path $output '.build/LocalBrokerRuntime.targets'
+New-Item -ItemType Directory -Path (Split-Path -Parent $runtimeTargets) | Out-Null
+[IO.File]::WriteAllText($runtimeTargets, @"
+<Project>
+  <Target Name="SelectLocalBrokerRuntime" BeforeTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="$packageRuntimeVersion" />
+    </ItemGroup>
+  </Target>
+</Project>
+"@, [Text.UTF8Encoding]::new($false))
 function Invoke-Checked([string[]] $Arguments) {
     & $DotNetPath @Arguments
     if ($LASTEXITCODE -ne 0) { throw 'BROKER_PACKAGE_BUILD_FAILED' }
@@ -33,7 +47,8 @@ foreach ($component in @('broker', 'sample', 'adopter')) {
     $project = Join-Path $root $components[$component]
     # RID-specific resolution is isolated from the repository's portable locks.
     # Freeze that resolution, then use only its locked assets for publication.
-    $properties = @('-r', 'win-x64', '-p:SelfContained=true', '-p:NuGetLockFilePath=obj/windows-package-win-x64.lock.json')
+    $properties = @('-r', 'win-x64', '-p:SelfContained=true', '-p:NuGetLockFilePath=obj/windows-package-win-x64.lock.json',
+        ('-p:CustomAfterMicrosoftCommonTargets=' + $runtimeTargets))
     Invoke-Checked (@('restore', $project) + $properties)
     Invoke-Checked (@('restore', $project, '--locked-mode') + $properties)
     $published = Join-Path $output ('.build/' + $component)
@@ -54,6 +69,7 @@ foreach ($component in @('broker', 'sample', 'adopter')) {
     }
     $runtimeConfig = Get-Content -LiteralPath (@(Get-ChildItem -LiteralPath $destination -Filter '*.runtimeconfig.json')[0].FullName) -Raw | ConvertFrom-Json
     $runtimeVersion = @($runtimeConfig.runtimeOptions.includedFrameworks | Where-Object { $_.name -ceq 'Microsoft.NETCore.App' })[0].version
+    if ($runtimeVersion -cne $packageRuntimeVersion) { throw 'BROKER_PACKAGE_RUNTIME_VERSION_MISMATCH' }
     $assets = Get-Content -LiteralPath (Join-Path (Split-Path -Parent $project) 'obj/project.assets.json') -Raw | ConvertFrom-Json
     $runtimePacks = @($assets.packageFolders.PSObject.Properties.Name | ForEach-Object { Join-Path $_ ('microsoft.netcore.app.runtime.win-x64/' + $runtimeVersion) } | Where-Object { Test-Path -LiteralPath $_ })
     if ($runtimePacks.Count -ne 1) { throw 'BROKER_PACKAGE_RUNTIME_NOTICES_MISSING' }
