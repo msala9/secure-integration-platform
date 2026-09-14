@@ -393,10 +393,9 @@ a replacement executable while preserving the old ciphertext, denied the old
 executable, denied the elevated administrator caller and denied use after revocation.
 
 The revocation left registration metadata, other registrations, Installation state,
-keys and protected state intact. The evidence ledger at
-`C:\SecureEvidence\broker-adopt-realservice-4a8eb70\result.json` records only
-metadata and SHA-256 hashes. The synthetic envelope was removed after the result;
-child stdout/stderr files contain bounded pass/denial markers only.
+keys and protected state intact. The external evidence ledger records only metadata
+and SHA-256 hashes. The synthetic envelope was removed after the result; child
+stdout/stderr files contain bounded pass/denial markers only.
 
 Residual limits remain: this does not prove another Windows version, package signing,
 machine/profile recovery, external issuer revocation, a real management application,
