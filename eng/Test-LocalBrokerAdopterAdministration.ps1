@@ -24,13 +24,6 @@ function New-EphemeralPassword {
     finally { $rng.Dispose() }
     return ('A1!' + [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', 'a').Replace('/', 'b'))
 }
-function Get-StringSha256([string] $Value) {
-    $sha = [Security.Cryptography.SHA256]::Create()
-    try {
-        return [Convert]::ToBase64String($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($Value)))
-    }
-    finally { $sha.Dispose() }
-}
 function Quote-Arg([string] $Value) {
     return '"' + $Value.Replace('\', '\\').Replace('"', '\"') + '"'
 }
@@ -89,17 +82,6 @@ function Invoke-AdminProcess {
     & $Exe @Arguments | Out-Null
     if ($LASTEXITCODE -ne $ExpectedExitCode) { throw ('ADOPTER_GATE_ADMIN_PROCESS_FAILED exit=' + $LASTEXITCODE) }
     return [ordered]@{ exe = [IO.Path]::GetFileName($Exe); exitCode = $LASTEXITCODE; elevatedCallerDenied = $true }
-}
-function Get-StateDigest([string] $DataDirectory, [string] $MarkerPath, [string] $SettingsPath) {
-    $hashes = @()
-    foreach ($path in @($MarkerPath, $SettingsPath)) {
-        if (Test-Path -LiteralPath $path -PathType Leaf) { $hashes += (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash }
-    }
-    $keys = Join-Path $DataDirectory 'keys'
-    if (Test-Path -LiteralPath $keys -PathType Container) {
-        $hashes += @(Get-ChildItem -LiteralPath $keys -File | Sort-Object FullName | Get-FileHash -Algorithm SHA256 | Select-Object -ExpandProperty Hash)
-    }
-    return ($hashes -join ',')
 }
 function Read-Json([string] $Path) {
     return Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
@@ -166,9 +148,7 @@ try {
 
     $ledger.phases += Invoke-ChildProcess -Exe $adopter -Arguments @('status', $name, $name, 'adopter-eval', '-') -UserName $AccountName -Password $password -WorkingDirectory $evidence
     $ledger.phases += Invoke-ChildProcess -Exe $adopter -Arguments @('protect', $name, $name, 'adopter-eval', $envelope) -UserName $AccountName -Password $password -WorkingDirectory $evidence
-    $ledger.initialEnvelopeSha256 = (Get-FileHash -LiteralPath $envelope -Algorithm SHA256).Hash
     $ledger.phases += Invoke-ChildProcess -Exe $adopter -Arguments @('verify', $name, $name, 'adopter-eval', $envelope) -UserName $AccountName -Password $password -WorkingDirectory $evidence
-    $stateBefore = Get-StateDigest $data $marker $settingsPath
 
     & $lifecycle -Command Stop -Instance $Instance | Out-Null
     & $lifecycle -Command Start -Instance $Instance | Out-Null
@@ -196,7 +176,6 @@ try {
     & $lifecycle -Command Start -Instance $Instance | Out-Null
     $ledger.phases += Invoke-ChildProcess -Exe $adopterV2 -Arguments @('denied', $name, $name, 'adopter-eval', '-') -UserName $AccountName -Password $password -WorkingDirectory $evidence
 
-    $stateAfter = Get-StateDigest $data $marker $settingsPath
     $registered = Read-Json (Join-Path $evidence 'inspect-registered.json')
     $updated = Read-Json (Join-Path $evidence 'inspect-updated.json')
     $revoked = Read-Json (Join-Path $evidence 'inspect-revoked.json')
@@ -204,8 +183,6 @@ try {
     if (($updated | Where-Object { $_.RegistrationId -ceq 'local-sample' }).ExecutablePaths[0] -notlike '*\sample\SecureIntegration.Samples.LocalBroker.exe') { throw 'ADOPTER_GATE_SAMPLE_REGISTRATION_CHANGED' }
     $revokedApp = @($revoked | Where-Object { $_.RegistrationId -ceq 'adopter-eval' })[0]
     if (-not $revokedApp.Revoked -or @($revokedApp.AllowedUserSids).Count -ne 0 -or @($revokedApp.AllowedOperations).Count -ne 0) { throw 'ADOPTER_GATE_REVOKE_INVALID' }
-    $ledger.stateBeforeSha256 = Get-StringSha256 $stateBefore
-    $ledger.stateAfterSha256 = Get-StringSha256 $stateAfter
     $ledger.accountSid = $sid
     $ledger.result = 'PASS'
     [IO.File]::WriteAllText((Join-Path $evidence 'result.json'), ($ledger | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
