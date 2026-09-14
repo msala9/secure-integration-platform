@@ -5,7 +5,7 @@ $source = Join-Path $PSScriptRoot '..\..\..\deploy\windows\Invoke-LocalBroker.ps
 $tokens = $null; $errors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile($source, [ref]$tokens, [ref]$errors)
 if ($errors.Count -ne 0) { throw 'SCRIPT_PARSE_FAILED' }
-foreach ($scriptFile in @('Build-LocalBrokerPackage.ps1', 'Test-LocalBrokerPackage.ps1', 'Test-LocalBrokerWindowsDelivery.ps1', 'Test-LocalBrokerCredentialAdoption.ps1')) {
+foreach ($scriptFile in @('Build-LocalBrokerPackage.ps1', 'Test-LocalBrokerPackage.ps1', 'Test-LocalBrokerWindowsDelivery.ps1', 'Test-LocalBrokerCredentialAdoption.ps1', 'Test-LocalBrokerAdopterAdministration.ps1')) {
     $path = Join-Path $PSScriptRoot ('..\..\..\eng\' + $scriptFile)
     [void][Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors)
     if ($errors.Count -ne 0) { throw 'DELIVERY_SCRIPT_PARSE_FAILED' }
