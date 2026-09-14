@@ -22,7 +22,7 @@ if (@(Compare-Object $actual $expected).Count -ne 0 -or @($expected | Select-Obj
     throw 'BROKER_PACKAGE_INVENTORY_MISMATCH'
 }
 foreach ($entry in $manifest.files) {
-    if ($entry.path -cnotmatch '^(broker|sample)/[a-zA-Z0-9_./-]+\.(dll|exe|deps\.json|runtimeconfig\.json|txt)$' -and
+    if ($entry.path -cnotmatch '^(broker|sample|adopter)/[a-zA-Z0-9_./-]+\.(dll|exe|deps\.json|runtimeconfig\.json|txt)$' -and
         $entry.path -cnotin @('Invoke-LocalBroker.ps1', 'README.md', 'LICENSE', 'LICENSE-APACHE-2.0', 'NOTICE')) { throw 'BROKER_PACKAGE_FILE_DENIED' }
     $path = [IO.Path]::GetFullPath((Join-Path $package $entry.path))
     if (-not $path.StartsWith($package + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'BROKER_PACKAGE_PATH_DENIED' }
@@ -36,5 +36,11 @@ foreach ($component in @('broker', 'sample')) {
     if ($runtime.Count -ne 1) { throw 'BROKER_PACKAGE_RUNTIME_CONFIG_INVALID' }
     $config = Get-Content -LiteralPath $runtime[0].FullName -Raw | ConvertFrom-Json
     if (-not $config.runtimeOptions.includedFrameworks) { throw 'BROKER_PACKAGE_NOT_SELF_CONTAINED' }
+}
+$adopter = Join-Path $package 'adopter'
+if (Test-Path -LiteralPath $adopter) {
+    foreach ($required in @('SecureIntegration.Samples.LocalBrokerAdopter.exe', 'SecureIntegration.Samples.LocalBrokerAdopter.deps.json')) {
+        if (-not (Test-Path -LiteralPath (Join-Path $adopter $required) -PathType Leaf)) { throw 'BROKER_PACKAGE_ADOPTER_APP_INVALID' }
+    }
 }
 Write-Output ('BROKER_PACKAGE_INVENTORY_HASHES_RUNTIME=PASS FILES=' + $actual.Count)

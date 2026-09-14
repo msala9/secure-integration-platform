@@ -1,13 +1,18 @@
 # Windows PowerShell 5.1. Uses published binaries; no SDK is needed on the runtime host.
 [CmdletBinding()]
 param(
-    [ValidateSet('Install', 'Start', 'Stop', 'Update', 'Verify')] [string] $Command = 'Start',
+    [ValidateSet('Install', 'Start', 'Stop', 'Update', 'Verify', 'RegisterApplication', 'InspectApplications', 'UpdateApplication', 'RevokeApplication')] [string] $Command = 'Start',
     [ValidatePattern('^[a-zA-Z0-9-]{1,40}$')] [string] $Instance = 'sample',
     [string] $BrokerPublishDirectory = (Join-Path $PSScriptRoot 'broker'),
     [string] $SamplePublishDirectory = (Join-Path $PSScriptRoot 'sample'),
+    [string] $AdopterPublishDirectory = (Join-Path $PSScriptRoot 'adopter'),
     [ValidatePattern('^[0-9a-f]{40}$')] [string] $ExpectedSourceCommit,
     [ValidatePattern('^[A-Fa-f0-9]{64}$')] [string] $ExpectedManifestSha256,
-    [string] $ApplicationUserSid
+    [string] $ApplicationUserSid,
+    [ValidatePattern('^[a-zA-Z0-9._-]{1,128}$')] [string] $ApplicationRegistrationId,
+    [string] $ApplicationExecutablePath,
+    [string[]] $ApplicationOperations,
+    [string[]] $ApplicationDataContext
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -20,8 +25,10 @@ $root = Join-Path $env:ProgramFiles ('SecureIntegration\LocalBroker\' + $Instanc
 $data = Join-Path $env:ProgramData ('SecureIntegration\LocalBroker\' + $Instance)
 $brokerDirectory = Join-Path $root 'broker'
 $sampleDirectory = Join-Path $root 'sample'
+$adopterDirectory = Join-Path $root 'adopter'
 $executable = Join-Path $brokerDirectory 'SecureIntegration.Broker.Service.exe'
 $sample = Join-Path $sampleDirectory 'SecureIntegration.Samples.LocalBroker.exe'
+$adopter = Join-Path $adopterDirectory 'SecureIntegration.Samples.LocalBrokerAdopter.exe'
 $binaryPath = '"' + $executable + '" --contentRoot "' + $brokerDirectory + '"'
 $marker = Join-Path $root 'installation.json'
 $settingsPath = Join-Path $brokerDirectory 'appsettings.json'
@@ -111,6 +118,10 @@ function Assert-ExpectedPackage {
     $sampleSource = (Resolve-Path -LiteralPath $SamplePublishDirectory).Path.TrimEnd('\')
     $package = Split-Path -Parent $brokerSource
     if ((Split-Path -Parent $sampleSource) -cne $package) { throw 'LOCAL_BROKER_PACKAGE_LAYOUT_INVALID' }
+    if (-not [string]::IsNullOrWhiteSpace($AdopterPublishDirectory) -and (Test-Path -LiteralPath $AdopterPublishDirectory -PathType Container)) {
+        $adopterSource = (Resolve-Path -LiteralPath $AdopterPublishDirectory).Path.TrimEnd('\')
+        if ((Split-Path -Parent $adopterSource) -cne $package) { throw 'LOCAL_BROKER_PACKAGE_LAYOUT_INVALID' }
+    }
     $manifestPath = Join-Path $package 'package-manifest.json'
     if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw 'LOCAL_BROKER_PACKAGE_MANIFEST_REQUIRED' }
     if ((Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash -cne $ExpectedManifestSha256.ToUpperInvariant()) {
@@ -128,7 +139,7 @@ function Assert-ExpectedPackage {
         throw 'LOCAL_BROKER_PACKAGE_INVENTORY_MISMATCH'
     }
     foreach ($entry in $manifest.files) {
-        if ($entry.path -cnotmatch '^(broker|sample)/[a-zA-Z0-9_./-]+\.(dll|exe|deps\.json|runtimeconfig\.json|txt)$' -and
+        if ($entry.path -cnotmatch '^(broker|sample|adopter)/[a-zA-Z0-9_./-]+\.(dll|exe|deps\.json|runtimeconfig\.json|txt)$' -and
             $entry.path -cnotin @('Invoke-LocalBroker.ps1', 'README.md', 'LICENSE', 'LICENSE-APACHE-2.0', 'NOTICE')) { throw 'LOCAL_BROKER_PACKAGE_FILE_DENIED' }
         $path = [IO.Path]::GetFullPath((Join-Path $package $entry.path))
         if (-not $path.StartsWith($package + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'LOCAL_BROKER_PACKAGE_PATH_DENIED' }
@@ -138,7 +149,98 @@ function Assert-ExpectedPackage {
 }
 function Write-Settings($Value) {
     Assert-NoReparse $settingsPath
-    [IO.File]::WriteAllText($settingsPath, ($Value | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+    $directory = Split-Path -Parent $settingsPath
+    New-Item -ItemType Directory -Path $directory -Force | Out-Null
+    $temporary = Join-Path $directory ('.appsettings-' + [guid]::NewGuid().ToString('N') + '.tmp')
+    $backup = Join-Path $directory ('.appsettings-backup-' + [guid]::NewGuid().ToString('N') + '.tmp')
+    try {
+        [IO.File]::WriteAllText($temporary, ($Value | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+        if (Test-Path -LiteralPath $settingsPath -PathType Leaf) {
+            [IO.File]::Replace($temporary, $settingsPath, $backup)
+        }
+        else {
+            [IO.File]::Move($temporary, $settingsPath)
+        }
+        $temporary = $null
+    }
+    finally {
+        if ($temporary -and (Test-Path -LiteralPath $temporary -PathType Leaf)) { Remove-Item -LiteralPath $temporary -Force }
+        if (Test-Path -LiteralPath $backup -PathType Leaf) { Remove-Item -LiteralPath $backup -Force }
+    }
+}
+function Read-Settings {
+    if (-not (Test-Path -LiteralPath $settingsPath -PathType Leaf)) { throw 'LOCAL_BROKER_SETTINGS_ABSENT' }
+    Assert-NoReparse $settingsPath
+    return Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
+}
+function Assert-ServiceStoppedForApplicationChange {
+    param($Service)
+    if ($Service -and $Service.State -ne 'Stopped') { throw 'LOCAL_BROKER_APPLICATION_CHANGE_REQUIRES_STOP: stop the owned service before editing application policy.' }
+}
+function Get-CanonicalApplicationExecutable {
+    if ([string]::IsNullOrWhiteSpace($ApplicationExecutablePath)) { throw 'LOCAL_BROKER_APPLICATION_EXECUTABLE_REQUIRED' }
+    $path = [IO.Path]::GetFullPath($ApplicationExecutablePath)
+    Assert-NoReparse $path
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw 'LOCAL_BROKER_APPLICATION_EXECUTABLE_REQUIRED' }
+    $leaf = [IO.Path]::GetFileName($path)
+    if ($leaf -cin @('cmd.exe', 'powershell.exe', 'pwsh.exe', 'wscript.exe', 'cscript.exe', 'mshta.exe', 'rundll32.exe', 'regsvr32.exe', 'dotnet.exe')) {
+        throw 'LOCAL_BROKER_APPLICATION_GENERIC_HOST_DENIED'
+    }
+    return (Resolve-Path -LiteralPath $path).Path
+}
+function Get-ApplicationOperations {
+    $requested = @($ApplicationOperations)
+    if ($requested.Count -eq 0) { $requested = @('ProtectData', 'UnprotectData', 'GetBrokerStatus') }
+    $allowed = @('ProtectData', 'UnprotectData', 'GetBrokerStatus')
+    if (@($requested | Select-Object -Unique).Count -ne $requested.Count) { throw 'LOCAL_BROKER_APPLICATION_OPERATIONS_INVALID' }
+    foreach ($operation in $requested) {
+        if ($operation -cnotin $allowed) { throw 'LOCAL_BROKER_APPLICATION_OPERATIONS_INVALID' }
+    }
+    return @($requested)
+}
+function Get-ApplicationContexts {
+    $contexts = @()
+    foreach ($entry in @($ApplicationDataContext)) {
+        if ([string]::IsNullOrWhiteSpace($entry)) { throw 'LOCAL_BROKER_APPLICATION_CONTEXT_INVALID' }
+        $separator = $entry.IndexOf(':')
+        if ($separator -le 0 -or $separator -ge ($entry.Length - 1)) { throw 'LOCAL_BROKER_APPLICATION_CONTEXT_INVALID' }
+        $purpose = $entry.Substring(0, $separator)
+        $contentType = $entry.Substring($separator + 1)
+        if ($purpose.Length -gt 128 -or $contentType.Length -gt 128 -or
+            $purpose -match '[\r\n]' -or $contentType -match '[\r\n]' -or $contentType -notmatch '^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+$') {
+            throw 'LOCAL_BROKER_APPLICATION_CONTEXT_INVALID'
+        }
+        $contexts += [ordered]@{ Purpose = $purpose; ContentType = $contentType }
+    }
+    if (@($contexts | ForEach-Object { $_.Purpose + ':' + $_.ContentType } | Select-Object -Unique).Count -ne $contexts.Count) {
+        throw 'LOCAL_BROKER_APPLICATION_CONTEXT_INVALID'
+    }
+    return @($contexts)
+}
+function Get-ApplicationIndex($Settings, [string] $RegistrationId) {
+    $matches = @()
+    for ($index = 0; $index -lt @($Settings.Broker.Applications).Count; $index++) {
+        if ($Settings.Broker.Applications[$index].RegistrationId -ceq $RegistrationId) { $matches += $index }
+    }
+    if ($matches.Count -gt 1) { throw 'LOCAL_BROKER_APPLICATION_DUPLICATE_REGISTRATION' }
+    if ($matches.Count -eq 0) { return -1 }
+    return $matches[0]
+}
+function New-ApplicationPolicy {
+    $sid = Get-ApplicationUserSid
+    $path = Get-CanonicalApplicationExecutable
+    $operations = Get-ApplicationOperations
+    $contexts = Get-ApplicationContexts
+    return [ordered]@{
+        RegistrationId = $ApplicationRegistrationId
+        AllowedUserSids = @($sid)
+        ExecutablePaths = @($path)
+        ExecutableSha256 = @((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash)
+        AllowedPublisherThumbprints = @()
+        AllowedOperations = @($operations)
+        AllowedDataProtectionContexts = @($contexts)
+        GatewayGrants = @()
+    }
 }
 function Get-ApplicationUserSid {
     if ([string]::IsNullOrWhiteSpace($ApplicationUserSid)) {
@@ -166,7 +268,7 @@ if ($Command -eq 'Verify') {
     $envelope = Join-Path $env:TEMP ($name + '.envelope')
     if (Test-Path -LiteralPath $envelope) { throw 'LOCAL_BROKER_VERIFY_ENVELOPE_COLLISION' }
     try {
-        & $PSCommandPath -Command Install -Instance $Instance -BrokerPublishDirectory $BrokerPublishDirectory -SamplePublishDirectory $SamplePublishDirectory -ExpectedSourceCommit $ExpectedSourceCommit -ExpectedManifestSha256 $ExpectedManifestSha256 -ApplicationUserSid $identity.User.Value
+        & $PSCommandPath -Command Install -Instance $Instance -BrokerPublishDirectory $BrokerPublishDirectory -SamplePublishDirectory $SamplePublishDirectory -AdopterPublishDirectory $AdopterPublishDirectory -ExpectedSourceCommit $ExpectedSourceCommit -ExpectedManifestSha256 $ExpectedManifestSha256 -ApplicationUserSid $identity.User.Value
         & $PSCommandPath -Command Start -Instance $Instance
         Invoke-Sample 'protect' $envelope
         Write-Output ('FIRST_PROTECT_MS=' + $started.ElapsedMilliseconds)
@@ -181,7 +283,7 @@ if ($Command -eq 'Verify') {
         # The same registration from the unstaged executable must fail process/path authorization.
         & (Join-Path $SamplePublishDirectory 'SecureIntegration.Samples.LocalBroker.exe') 'denied' $name $name 'local-sample' '-'
         if ($LASTEXITCODE -ne 0) { throw 'LOCAL_BROKER_UNAUTHORIZED_PROCESS_TEST_FAILED' }
-        & $PSCommandPath -Command Update -Instance $Instance -BrokerPublishDirectory $BrokerPublishDirectory -SamplePublishDirectory $SamplePublishDirectory -ExpectedSourceCommit $ExpectedSourceCommit -ExpectedManifestSha256 $ExpectedManifestSha256
+        & $PSCommandPath -Command Update -Instance $Instance -BrokerPublishDirectory $BrokerPublishDirectory -SamplePublishDirectory $SamplePublishDirectory -AdopterPublishDirectory $AdopterPublishDirectory -ExpectedSourceCommit $ExpectedSourceCommit -ExpectedManifestSha256 $ExpectedManifestSha256
         Invoke-Sample 'verify' $envelope
         $after = @(Get-ChildItem -LiteralPath (Join-Path $data 'keys') -File | Sort-Object Name | Get-FileHash -Algorithm SHA256 | Select-Object -ExpandProperty Hash)
         if (($stateHashes -join ',') -cne ($after -join ',') -or $acl -cne (Get-Acl -LiteralPath $data).Sddl -or
@@ -239,6 +341,10 @@ if ($Command -eq 'Install') {
     New-Item -ItemType Directory -Path $brokerDirectory, $sampleDirectory -Force | Out-Null
     Copy-Published $BrokerPublishDirectory $brokerDirectory
     Copy-Published $SamplePublishDirectory $sampleDirectory
+    if (-not [string]::IsNullOrWhiteSpace($AdopterPublishDirectory) -and (Test-Path -LiteralPath $AdopterPublishDirectory -PathType Container)) {
+        New-Item -ItemType Directory -Path $adopterDirectory -Force | Out-Null
+        Copy-Published $AdopterPublishDirectory $adopterDirectory
+    }
     $settings = @{ Broker = @{ ServiceName = $name; PipeName = $name; InstallationId = $record.installationId; DataDirectory = $data; InitializeDataKeys = $true; Gateway = @{ Enabled = $false }; Applications = @(@{
         RegistrationId = 'local-sample'; AllowedUserSids = @($ApplicationUserSid); ExecutablePaths = @($sample); ExecutableSha256 = @((Get-FileHash -LiteralPath $sample -Algorithm SHA256).Hash); AllowedOperations = @('ProtectData', 'UnprotectData', 'GetBrokerStatus')
         AllowedDataProtectionContexts = @(@{ Purpose = 'sample'; ContentType = 'text/plain' },
@@ -250,6 +356,66 @@ if ($Command -eq 'Install') {
     return
 }
 if (-not $owned) { throw 'LOCAL_BROKER_SERVICE_ABSENT: install a fresh instance or restore the existing installation; do not reinitialize data.' }
+if ($Command -eq 'InspectApplications') {
+    $settings = Read-Settings
+    $report = @($settings.Broker.Applications | ForEach-Object {
+        [ordered]@{
+            RegistrationId = $_.RegistrationId
+            AllowedUserSids = @($_.AllowedUserSids)
+            ExecutablePaths = @($_.ExecutablePaths)
+            ExecutableSha256 = @($_.ExecutableSha256)
+            AllowedOperations = @($_.AllowedOperations)
+            AllowedDataProtectionContexts = @($_.AllowedDataProtectionContexts | ForEach-Object { [ordered]@{ Purpose = $_.Purpose; ContentType = $_.ContentType } })
+            Revoked = (@($_.AllowedUserSids).Count -eq 0 -or @($_.AllowedOperations).Count -eq 0)
+        }
+    })
+    $report | ConvertTo-Json -Depth 6
+    return
+}
+if ($Command -eq 'RegisterApplication') {
+    Assert-ServiceStoppedForApplicationChange $owned
+    if ([string]::IsNullOrWhiteSpace($ApplicationRegistrationId)) { throw 'LOCAL_BROKER_APPLICATION_REGISTRATION_REQUIRED' }
+    $settings = Read-Settings
+    if ($settings.Broker.Gateway.Enabled) { throw 'LOCAL_BROKER_APPLICATION_GATEWAY_MUST_BE_DISABLED' }
+    if ((Get-ApplicationIndex $settings $ApplicationRegistrationId) -ne -1) { throw 'LOCAL_BROKER_APPLICATION_ALREADY_REGISTERED' }
+    $settings.Broker.Applications += (New-ApplicationPolicy)
+    $settings.Broker.InitializeDataKeys = $false
+    Write-Settings $settings
+    Write-Output ('APPLICATION_REGISTERED=' + $ApplicationRegistrationId + ' NEXT=START')
+    return
+}
+if ($Command -eq 'UpdateApplication') {
+    Assert-ServiceStoppedForApplicationChange $owned
+    if ([string]::IsNullOrWhiteSpace($ApplicationRegistrationId)) { throw 'LOCAL_BROKER_APPLICATION_REGISTRATION_REQUIRED' }
+    $settings = Read-Settings
+    $index = Get-ApplicationIndex $settings $ApplicationRegistrationId
+    if ($index -lt 0) { throw 'LOCAL_BROKER_APPLICATION_NOT_REGISTERED' }
+    $path = Get-CanonicalApplicationExecutable
+    $settings.Broker.Applications[$index].ExecutablePaths = @($path)
+    $settings.Broker.Applications[$index].ExecutableSha256 = @((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash)
+    if ($settings.Broker.Applications[$index].AllowedUserSids.Count -eq 0) {
+        $settings.Broker.Applications[$index].AllowedUserSids = @((Get-ApplicationUserSid))
+    }
+    $settings.Broker.InitializeDataKeys = $false
+    Write-Settings $settings
+    Write-Output ('APPLICATION_UPDATED=' + $ApplicationRegistrationId + ' NEXT=START')
+    return
+}
+if ($Command -eq 'RevokeApplication') {
+    Assert-ServiceStoppedForApplicationChange $owned
+    if ([string]::IsNullOrWhiteSpace($ApplicationRegistrationId)) { throw 'LOCAL_BROKER_APPLICATION_REGISTRATION_REQUIRED' }
+    $settings = Read-Settings
+    $index = Get-ApplicationIndex $settings $ApplicationRegistrationId
+    if ($index -lt 0) { throw 'LOCAL_BROKER_APPLICATION_NOT_REGISTERED' }
+    $settings.Broker.Applications[$index].AllowedUserSids = @()
+    $settings.Broker.Applications[$index].AllowedOperations = @()
+    $settings.Broker.Applications[$index].AllowedDataProtectionContexts = @()
+    $settings.Broker.Applications[$index].GatewayGrants = @()
+    $settings.Broker.InitializeDataKeys = $false
+    Write-Settings $settings
+    Write-Output ('APPLICATION_REVOKED=' + $ApplicationRegistrationId + ' NEXT=START')
+    return
+}
 if ($Command -eq 'Update') {
     Assert-ExpectedPackage
     & $PSCommandPath -Command Stop -Instance $Instance
@@ -259,9 +425,18 @@ if ($Command -eq 'Update') {
     Write-Settings $settings
     Copy-Published $BrokerPublishDirectory $brokerDirectory
     Copy-Published $SamplePublishDirectory $sampleDirectory
+    if (-not [string]::IsNullOrWhiteSpace($AdopterPublishDirectory) -and (Test-Path -LiteralPath $AdopterPublishDirectory -PathType Container)) {
+        New-Item -ItemType Directory -Path $adopterDirectory -Force | Out-Null
+        Copy-Published $AdopterPublishDirectory $adopterDirectory
+    }
     $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
     $settings.Broker.InitializeDataKeys = $false
-    $settings.Broker.Applications[0].ExecutableSha256 = @((Get-FileHash -LiteralPath $sample -Algorithm SHA256).Hash)
+    foreach ($application in @($settings.Broker.Applications)) {
+        if ($application.RegistrationId -ceq 'local-sample') {
+            $application.ExecutablePaths = @($sample)
+            $application.ExecutableSha256 = @((Get-FileHash -LiteralPath $sample -Algorithm SHA256).Hash)
+        }
+    }
     Write-Settings $settings
 }
 if ($owned.State -ne 'Running' -or $Command -eq 'Update') { Invoke-ServiceAction 'Start' }

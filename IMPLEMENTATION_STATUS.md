@@ -29,7 +29,7 @@ distinct levels. The integrated baseline does not replace the exact commit of a 
 | Broker → Gateway continuity | **Integrated through PR #68 — targeted synthetic E2E PASS** | Existing Broker identity records authoritative renewal lifecycle, renews single-flight, resumes after restart or a lost renewal response and reports uncertain remote outcomes as non-retryable. Evidence is an in-process Windows transport fixture over the real enrollment, authorization, Published Connector and Synthetic Provider services; it is not a Windows Service or PostgreSQL/live qualification. |
 | Windows x64 delivery | **Integrated through PR #69 — bounded real-service path** | Software `5ad048f...`: self-contained package, non-elevated local use, exact two-build envelope compatibility, restart/rejected-update preservation and real Broker → Gateway/PG/Synthetic Provider with outage recovery passed on Windows 10 Pro 22H2 x64 19045.6466. The account is a member of Administrators; baseline ordinary-token failure remains recorded. See the [observed scope](docs/user/local-broker.md#windows-delivery-observed-on-september-5-2026); no universal Windows, live renewal/DR or production claim. |
 | Application credential adoption | **Integrated through PR #70 — focused tests and real standard-account gate PASS** | Software `8909ab9...`, gate `9ab03c1...`: runtime input, private ciphertext-only storage, new-process use, replacement and failed-save preservation passed under a non-Administrators account. [Observed scope](docs/user/local-broker.md#application-credential-adoption-observed-on-september-6-2026). Application-owned per-Installation credential, not vendor secret retrieval, external authentication, a secretless client or actual management-app/CVD closure. |
-| Own-application Broker administration | **PLANNED — BROKER-ADOPT** | Runtime policy and SDK support explicit applications, but the supported delivery path still registers/updates `local-sample`; own-application registration requires protected configuration editing. Supported registration/update/revocation is the next outcome, not an integrated claim. |
+| Own-application Broker administration | **CANDIDATE — BROKER-ADOPT branch work, not integrated** | Local candidate tooling registers, inspects, updates and revokes a named .NET application without hand-editing settings, and the package includes a distinct evaluation app. Focused simulated-SCM/settings tests pass. The required ordinary-account real-service proof remains pending, so this is not an integrated capability claim. |
 | Admin UI/API | **Integrated — guided Connector onboarding and operator usability** | First-session entry, responsive layout, explicit UTC dates, bundled guide and Broker/Direct selection are integrated. Five actions across three roles cover Installation/enrollment, definition, binding/grant, four-eyes and first invocation. `FULLSTACK-02` uses PostgreSQL 18 and synthetic identities; not production authentication. |
 | Authentication foundation | **Integrated** | Provider-neutral SOAP/session, JWT/X.509, signing and mTLS primitives; they do not automatically qualify an external service. |
 | Targeted security remediation | **Integrated** | Bounded Broker IPC admission and Azure readiness based on reading the configured secret, not metadata alone. These fixes do not establish absence of vulnerabilities, a Connector sandbox or general live-cloud qualification. |
@@ -45,11 +45,12 @@ distinct levels. The integrated baseline does not replace the exact commit of a 
 
 ## Next planned outcome
 
-BROKER-ADOPT will make registration, executable update and revocation of an adopter's
-own .NET application available through supported administrator tooling, reusing
-existing Broker policy and protection operations. EVAL-DELIVERY follows with a
-versioned evaluation package and one focused success/recovery check. Neither outcome
-is complete at this baseline. The development repository's
+BROKER-ADOPT branch work is making registration, executable update and revocation of
+an adopter's own .NET application available through supported administrator tooling,
+reusing existing Broker policy and protection operations. The local candidate includes
+focused static/settings evidence but still needs its ordinary-account real-service
+proof before integration. EVAL-DELIVERY follows with a versioned evaluation package
+and one focused success/recovery check. Neither outcome is integrated at this baseline. The development repository's
 [implementation plan](https://github.com/msala9/secure-integration-platform/blob/main/docs/implementation/implementation-plan.md#current-order-of-work)
 and [backlog](https://github.com/msala9/secure-integration-platform/blob/main/docs/implementation/backlog.md#current-work-order)
 own the scope; optional integrations and enterprise mechanisms remain demand-driven.

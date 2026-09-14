@@ -10,7 +10,9 @@ foreach ($scriptFile in @('Build-LocalBrokerPackage.ps1', 'Test-LocalBrokerPacka
     [void][Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors)
     if ($errors.Count -ne 0) { throw 'DELIVERY_SCRIPT_PARSE_FAILED' }
 }
-foreach ($functionName in @('Assert-NoReparse', 'Get-OwnedService', 'Get-ApplicationUserSid', 'Assert-ExpectedPackage', 'Write-Settings')) {
+foreach ($functionName in @('Assert-NoReparse', 'Get-OwnedService', 'Get-ApplicationUserSid', 'Assert-ExpectedPackage', 'Write-Settings',
+    'Read-Settings', 'Assert-ServiceStoppedForApplicationChange', 'Get-CanonicalApplicationExecutable', 'Get-ApplicationOperations',
+    'Get-ApplicationContexts', 'Get-ApplicationIndex', 'New-ApplicationPolicy')) {
     $definition = $ast.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $functionName }, $true)
     . ([ScriptBlock]::Create($definition.Extent.Text))
 }
@@ -146,13 +148,12 @@ try {
     function Copy-Published {
         param($Source, $Destination)
         $script:copies++
-        $persisted = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
-        Assert (-not $persisted.Broker.InitializeDataKeys)
         throw 'LOCAL_BROKER_COPY_FIXTURE_FAILURE'
     }
     $updatePackage = Join-Path $fixture 'update-package'
     $BrokerPublishDirectory = Join-Path $updatePackage 'broker'
     $SamplePublishDirectory = Join-Path $updatePackage 'sample'
+    $AdopterPublishDirectory = Join-Path $updatePackage 'adopter'
     New-Item -ItemType Directory -Path $BrokerPublishDirectory, $SamplePublishDirectory -Force | Out-Null
     [IO.File]::WriteAllText((Join-Path $BrokerPublishDirectory 'SecureIntegration.Broker.Service.exe'), 'synthetic-broker')
     [IO.File]::WriteAllText((Join-Path $SamplePublishDirectory 'SecureIntegration.Samples.LocalBroker.exe'), 'synthetic-sample')
@@ -215,6 +216,85 @@ try {
     Assert ($persisted.Broker.Applications[0].AllowedUserSids[0] -ceq $ApplicationUserSid)
     Assert (Test-Path -LiteralPath (Join-Path $data 'preserve.bin'))
     Write-Output 'FAILED_UPDATE_DISALLOWS_INITIALIZATION_PRESERVES_STATE=PASS'
+
+    $registerBranch = $ast.Find({ param($node) $node -is [Management.Automation.Language.IfStatementAst] -and $node.Clauses[0].Item1.Extent.Text -eq '$Command -eq ''RegisterApplication''' }, $false)
+    $inspectBranch = $ast.Find({ param($node) $node -is [Management.Automation.Language.IfStatementAst] -and $node.Clauses[0].Item1.Extent.Text -eq '$Command -eq ''InspectApplications''' }, $false)
+    $applicationUpdateBranch = $ast.Find({ param($node) $node -is [Management.Automation.Language.IfStatementAst] -and $node.Clauses[0].Item1.Extent.Text -eq '$Command -eq ''UpdateApplication''' }, $false)
+    $revokeBranch = $ast.Find({ param($node) $node -is [Management.Automation.Language.IfStatementAst] -and $node.Clauses[0].Item1.Extent.Text -eq '$Command -eq ''RevokeApplication''' }, $false)
+    Assert ($null -ne $registerBranch -and $null -ne $inspectBranch -and $null -ne $applicationUpdateBranch -and $null -ne $revokeBranch)
+    $applicationDirectory = Join-Path $root 'adopter'
+    $installedSample = Join-Path $root 'sample\SecureIntegration.Samples.LocalBroker.exe'
+    New-Item -ItemType Directory -Path $applicationDirectory, (Split-Path -Parent $installedSample) -Force | Out-Null
+    [IO.File]::WriteAllText($installedSample, 'synthetic-sample')
+    $adopterExe = Join-Path $applicationDirectory 'SecureIntegration.Samples.LocalBrokerAdopter.exe'
+    $adopterV2 = Join-Path $applicationDirectory 'SecureIntegration.Samples.LocalBrokerAdopter.v2.exe'
+    [IO.File]::WriteAllText($adopterExe, 'synthetic-adopter-v1')
+    [IO.File]::WriteAllText($adopterV2, 'synthetic-adopter-v2')
+    $settings = @{ Broker = @{ InitializeDataKeys = $true; InstallationId = 'preserve-id'; Gateway = @{ Enabled = $false }; Applications = @(@{
+        RegistrationId = 'local-sample'; AllowedUserSids = @($ApplicationUserSid); ExecutablePaths = @($installedSample)
+        ExecutableSha256 = @((Get-FileHash -LiteralPath $installedSample -Algorithm SHA256).Hash)
+        AllowedOperations = @('ProtectData', 'UnprotectData', 'GetBrokerStatus')
+        AllowedDataProtectionContexts = @(@{ Purpose = 'sample'; ContentType = 'text/plain' })
+        GatewayGrants = @()
+    }) } }
+    Write-Settings $settings
+    $script:service = [pscustomobject]@{ PathName = $binaryPath; StartName = 'NT SERVICE\' + $name; State = 'Stopped' }
+    $owned = $script:service
+    $ApplicationRegistrationId = 'adopter-eval'
+    $ApplicationExecutablePath = $adopterExe
+    $ApplicationOperations = @('ProtectData', 'UnprotectData', 'GetBrokerStatus')
+    $ApplicationDataContext = @('adopter-secret:text/plain')
+    $beforeRegisterData = (Get-FileHash -LiteralPath (Join-Path $data 'preserve.bin') -Algorithm SHA256).Hash
+    $Command = 'RegisterApplication'
+    & ([ScriptBlock]::Create($registerBranch.Extent.Text)) | Out-Null
+    $registered = Read-Settings
+    Assert (-not $registered.Broker.InitializeDataKeys)
+    Assert (@($registered.Broker.Applications).Count -eq 2)
+    $appIndex = Get-ApplicationIndex $registered 'adopter-eval'
+    Assert ($appIndex -eq 1)
+    Assert ($registered.Broker.Applications[$appIndex].AllowedUserSids[0] -ceq $ApplicationUserSid)
+    Assert ($registered.Broker.Applications[$appIndex].ExecutablePaths[0] -ceq $adopterExe)
+    Assert ($registered.Broker.Applications[$appIndex].ExecutableSha256[0] -ceq (Get-FileHash -LiteralPath $adopterExe -Algorithm SHA256).Hash)
+    Assert ($registered.Broker.Applications[$appIndex].AllowedDataProtectionContexts[0].Purpose -ceq 'adopter-secret')
+    $Command = 'InspectApplications'
+    $inspectJson = & ([ScriptBlock]::Create($inspectBranch.Extent.Text))
+    Assert (($inspectJson | Out-String) -match 'adopter-eval')
+    $ApplicationExecutablePath = $adopterV2
+    $ApplicationUserSid = ''
+    $Command = 'UpdateApplication'
+    & ([ScriptBlock]::Create($applicationUpdateBranch.Extent.Text)) | Out-Null
+    $updated = Read-Settings
+    Assert ($updated.Broker.Applications[$appIndex].RegistrationId -ceq 'adopter-eval')
+    Assert ($updated.Broker.Applications[$appIndex].ExecutablePaths[0] -ceq $adopterV2)
+    Assert ($updated.Broker.Applications[$appIndex].ExecutableSha256[0] -ceq (Get-FileHash -LiteralPath $adopterV2 -Algorithm SHA256).Hash)
+    Assert ($updated.Broker.Applications[0].RegistrationId -ceq 'local-sample')
+    $Command = 'RevokeApplication'
+    & ([ScriptBlock]::Create($revokeBranch.Extent.Text)) | Out-Null
+    $revoked = Read-Settings
+    Assert (@($revoked.Broker.Applications).Count -eq 2)
+    Assert ($revoked.Broker.Applications[$appIndex].RegistrationId -ceq 'adopter-eval')
+    Assert (@($revoked.Broker.Applications[$appIndex].AllowedUserSids).Count -eq 0)
+    Assert (@($revoked.Broker.Applications[$appIndex].AllowedOperations).Count -eq 0)
+    Assert (@($revoked.Broker.Applications[$appIndex].AllowedDataProtectionContexts).Count -eq 0)
+    Assert ((Get-FileHash -LiteralPath (Join-Path $data 'preserve.bin') -Algorithm SHA256).Hash -ceq $beforeRegisterData)
+    Write-Output 'APPLICATION_REGISTER_INSPECT_UPDATE_REVOKE_PRESERVES_STATE=PASS (settings only)'
+
+    $settingsBeforeInvalid = (Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash
+    $ApplicationExecutablePath = Join-Path $applicationDirectory 'dotnet.exe'
+    [IO.File]::WriteAllText($ApplicationExecutablePath, 'synthetic-generic-host')
+    $ApplicationUserSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    $ApplicationDataContext = @('adopter-secret:text/plain')
+    $Command = 'RegisterApplication'
+    ExpectDenied { & ([ScriptBlock]::Create($registerBranch.Extent.Text)) }
+    Assert ((Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash -ceq $settingsBeforeInvalid)
+    $script:service.State = 'Running'
+    $ApplicationRegistrationId = 'another-adopter'
+    $ApplicationExecutablePath = $adopterExe
+    $Command = 'RegisterApplication'
+    ExpectDenied { & ([ScriptBlock]::Create($registerBranch.Extent.Text)) }
+    Assert ((Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash -ceq $settingsBeforeInvalid)
+    $script:service.State = 'Stopped'
+    Write-Output 'APPLICATION_INVALID_OR_RUNNING_CHANGE_DENIED_WITHOUT_PARTIAL_POLICY=PASS'
 
     $ExpectedManifestSha256 = '0' * 64
     ExpectDenied { Assert-ExpectedPackage }

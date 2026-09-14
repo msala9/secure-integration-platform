@@ -91,6 +91,15 @@ part of this evidence.
 | Unchanged application/context authority | `IT_BRK_Authorized_application_uses_pipe_and_unauthorized_hash_is_denied`, `Ungranted_data_context_is_denied_before_decoding_or_key_use` | Existing focused regressions; no new Core/SDK operation or authorization bypass. |
 | Actual non-Administrators-account new-process adoption | `eng/Test-LocalBrokerCredentialAdoption.ps1` | **PASS observed** on software `8909ab946a4a0ba446e45a163ff629e7674cec07`, gate `9ab03c10ceea6b2b5d7b3cd639da5b4689c95c50`: real Windows Service and six new sample processes configure/use/replace/use/failed-save/use under a standard account. Existing identity/configuration/keys preserved, service stopped and account disabled. [Exact scope and failed-attempt ledger](../user/local-broker.md#application-credential-adoption-observed-on-september-6-2026); no external authentication or clean-install timing claim. |
 
+### Own-application Broker administration candidate
+
+| Requirement | Named focused evidence | Scope |
+|---|---|---|
+| Supported register/inspect/update/revoke tooling | `APPLICATION_REGISTER_INSPECT_UPDATE_REVOKE_PRESERVES_STATE` in `tests/integration/Broker.Integration.Tests/LocalBrokerLifecycle.Tests.ps1` | Simulated-SCM/settings evidence for one named adopter app plus existing `local-sample`. Registration pins exact SID/path/hash/operations/context; update changes only the named application's executable path/hash; revocation preserves the registration record and unrelated applications while clearing use grants. Not a Windows Service proof. |
+| Invalid or unsafe application policy fails closed | `APPLICATION_INVALID_OR_RUNNING_CHANGE_DENIED_WITHOUT_PARTIAL_POLICY` in `tests/integration/Broker.Integration.Tests/LocalBrokerLifecycle.Tests.ps1` | Denies common generic hosts and policy edits while the service is running, preserving the previous settings file and protected data marker. |
+| Distinct .NET evaluation application | `samples/LocalBrokerAdopter/LocalBrokerAdopter.csproj`; package inventory validation in `eng/Test-LocalBrokerPackage.ps1` | Separate SDK-based executable using exact `adopter-secret` / `text/plain`; package validator permits and checks the optional `adopter` component. Build/package execution remains pending on a host with the pinned .NET 10 SDK. |
+| Real ordinary-account adopter lifecycle | Pending real-service gate | Must still prove new ordinary-account process Protect/Unprotect, restart, authorized executable update preserving old ciphertext, revocation denial and wrong account/executable/context negatives on the declared Windows target. |
+
 ## Exact-main DOC-02 evidence map
 
 | Requirement/claim | Named tests or evidence | Exact-main type/status |

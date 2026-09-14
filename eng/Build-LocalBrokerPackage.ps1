@@ -27,8 +27,9 @@ function Invoke-Checked([string[]] $Arguments) {
 $components = @{
     broker = 'src/Broker/Broker.Service/Broker.Service.csproj'
     sample = 'samples/LocalBroker/LocalBroker.csproj'
+    adopter = 'samples/LocalBrokerAdopter/LocalBrokerAdopter.csproj'
 }
-foreach ($component in @('broker', 'sample')) {
+foreach ($component in @('broker', 'sample', 'adopter')) {
     $project = Join-Path $root $components[$component]
     # RID-specific resolution is isolated from the repository's portable locks.
     # Freeze that resolution, then use only its locked assets for publication.
@@ -70,7 +71,7 @@ $manifest = [ordered]@{
     schemaVersion = 1; product = 'SecureIntegration.LocalBroker'; version = [string]$version
     sourceCommit = $head; runtimeIdentifier = 'win-x64'; selfContained = $true
     integrity = 'SHA-256 inventory, not a signature or publisher authentication'
-    dependencies = @('broker/SecureIntegration.Broker.Service.deps.json', 'sample/SecureIntegration.Samples.LocalBroker.deps.json')
+    dependencies = @('broker/SecureIntegration.Broker.Service.deps.json', 'sample/SecureIntegration.Samples.LocalBroker.deps.json', 'adopter/SecureIntegration.Samples.LocalBrokerAdopter.deps.json')
     files = $files
 }
 [IO.File]::WriteAllText((Join-Path $stage 'package-manifest.json'), ($manifest | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))

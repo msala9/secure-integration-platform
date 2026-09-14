@@ -61,6 +61,72 @@ plaintext or ciphertext. Keep the envelope for the restart/update checks.
 The SDK authenticates SCM/PID/pipe ownership before sending application data.
 An unavailable or unauthorized service gives a bounded error, not an automatic retry.
 
+## Register your own .NET application
+
+The package also includes a small evaluation app distinct from the bundled sample:
+
+```powershell
+$adopter = "$env:ProgramFiles\SecureIntegration\LocalBroker\sample\adopter\SecureIntegration.Samples.LocalBrokerAdopter.exe"
+```
+
+Register it explicitly from an elevated Windows PowerShell while the service is
+stopped. Use the ordinary application user's SID obtained above:
+
+```powershell
+.\Invoke-LocalBroker.ps1 -Command Stop -Instance sample
+.\Invoke-LocalBroker.ps1 -Command RegisterApplication -Instance sample `
+  -ApplicationRegistrationId adopter-eval `
+  -ApplicationUserSid $applicationSid `
+  -ApplicationExecutablePath $adopter `
+  -ApplicationOperations ProtectData,UnprotectData,GetBrokerStatus `
+  -ApplicationDataContext adopter-secret:text/plain
+.\Invoke-LocalBroker.ps1 -Command InspectApplications -Instance sample
+.\Invoke-LocalBroker.ps1 -Command Start -Instance sample
+```
+
+Then run the app as the ordinary application account:
+
+```powershell
+& $adopter status SecureIntegrationBroker.Local.sample SecureIntegrationBroker.Local.sample adopter-eval -
+& $adopter protect SecureIntegrationBroker.Local.sample SecureIntegrationBroker.Local.sample adopter-eval .\adopter.envelope
+& $adopter verify SecureIntegrationBroker.Local.sample SecureIntegrationBroker.Local.sample adopter-eval .\adopter.envelope
+```
+
+The registration grants only the exact SID, installed executable path, SHA-256 and
+`adopter-secret` / `text/plain` context. The tool rejects common interpreter or shell
+hosts such as `dotnet.exe`, `powershell.exe` and `cmd.exe`; register the installed
+application executable, not a general-purpose launcher.
+
+To authorize a replacement executable, stop the service and update only that
+registration. Existing Installation state, data keys and ciphertext remain intact:
+
+```powershell
+.\Invoke-LocalBroker.ps1 -Command Stop -Instance sample
+.\Invoke-LocalBroker.ps1 -Command UpdateApplication -Instance sample `
+  -ApplicationRegistrationId adopter-eval `
+  -ApplicationExecutablePath $adopter
+.\Invoke-LocalBroker.ps1 -Command Start -Instance sample
+& $adopter verify SecureIntegrationBroker.Local.sample SecureIntegrationBroker.Local.sample adopter-eval .\adopter.envelope
+```
+
+This is an application executable update, not a Broker package update. It does not
+copy Broker binaries, rotate keys, change the Installation or overwrite other
+registrations.
+
+To revoke the application locally, stop the service and revoke the registration:
+
+```powershell
+.\Invoke-LocalBroker.ps1 -Command Stop -Instance sample
+.\Invoke-LocalBroker.ps1 -Command RevokeApplication -Instance sample -ApplicationRegistrationId adopter-eval
+.\Invoke-LocalBroker.ps1 -Command Start -Instance sample
+& $adopter denied SecureIntegrationBroker.Local.sample SecureIntegrationBroker.Local.sample adopter-eval -
+```
+
+Revocation leaves the registration metadata, protected data, keys and unrelated
+registrations in place. It denies later use by clearing the registered SID,
+operations, contexts and Gateway grants; it does not delete envelopes or revoke a
+credential at its issuer.
+
 ## Replace a hardcoded application credential
 
 This path is for a credential **owned by your application, specific to this

@@ -125,6 +125,30 @@ in administrator-writable-only directories. Do not authorize `dotnet.exe`, a she
 or a general-purpose interpreter as the application. Path/publisher-controlled
 upgrades and optional hash updates are explicit administrator decisions.
 
+The current package provides supported administrator commands for this lifecycle,
+without hand-editing service settings. Stop the owned service, register a named
+application, inspect the metadata-only policy, then start:
+
+```powershell
+$adopter = "$env:ProgramFiles\SecureIntegration\LocalBroker\sample\adopter\SecureIntegration.Samples.LocalBrokerAdopter.exe"
+.\Invoke-LocalBroker.ps1 -Command Stop -Instance sample
+.\Invoke-LocalBroker.ps1 -Command RegisterApplication -Instance sample `
+  -ApplicationRegistrationId adopter-eval `
+  -ApplicationUserSid $applicationSid `
+  -ApplicationExecutablePath $adopter `
+  -ApplicationOperations ProtectData,UnprotectData,GetBrokerStatus `
+  -ApplicationDataContext adopter-secret:text/plain
+.\Invoke-LocalBroker.ps1 -Command InspectApplications -Instance sample
+.\Invoke-LocalBroker.ps1 -Command Start -Instance sample
+```
+
+`UpdateApplication` changes the authorized executable path/hash for that
+registration only; it is not a Broker service update and does not alter the
+Installation, keys or ciphertext. `RevokeApplication` preserves the registration
+record and unrelated applications, but clears SID, operation, context and Gateway
+grants so later use is denied after restart. The [package guide](../../deploy/windows/README.md#register-your-own-net-application)
+shows the exact evaluation app commands.
+
 The Broker derives the application from its OS-verified caller. Tenant/Gateway
 identities are not involved. AEAD binds Installation, application, purpose and
 content type; context identifiers must not contain CR/LF. A context grant is not

@@ -33,11 +33,11 @@ or extend the exact-candidate qualifications recorded below.
 ## NOW — supported onboarding of an adopter's application
 
 The runtime already accepts explicit application registrations, and the SDK already
-exposes `ProtectData`/`UnprotectData`. The gap is supported administration: the
-Windows delivery script installs `local-sample` and updates its executable hash;
-the [own-application guide](../user/local-broker.md#protect-and-recover)
-currently requires editing protected service configuration. Interface compatibility
-and a working sample are not a complete adopter lifecycle.
+exposes `ProtectData`/`UnprotectData`. The original gap was supported administration:
+the Windows delivery script installed `local-sample` and updated its executable hash.
+The current BROKER-ADOPT candidate adds supported register/inspect/update/revoke
+tooling and a distinct .NET evaluation app; it remains pending the required
+ordinary-account real-service proof before integration.
 
 Deliver one small, administrator-operated path to register, inspect, update and
 revoke a named application, reusing the existing configuration, policy and SDK.
