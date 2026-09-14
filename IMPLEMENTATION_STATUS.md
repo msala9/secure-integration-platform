@@ -1,13 +1,18 @@
 # Implementation dashboard
 
 Updated: 2026-09-14
-Software baseline integrated through PR #78:
-`5319d7d404b3c7b04f9810df87ff2757421e6a45`.
+Software baseline integrated through PR #79 (fast-forward):
+`2c2ff275afefb52c02e7660ec80944bcaf3d44a3`.
 This baseline includes application credential adoption, implementation simplification,
 Admin first access/responsive layout/UTC dates/operator guide and Broker/Direct
 onboarding alignment. Subsequent targeted security fixes, tenant audit export and
-Windows package preflight are also integrated. This planning refresh does not attest
-a new runtime, Windows, cloud or external-service test.
+Windows package preflight are also integrated. PR #79 adds the evaluation guide,
+searchable guided selections and authoritative enrollment/readiness context.
+Exact-main qualification is **SUCCESS**, with 22/22 checks passing in
+[General CI](https://github.com/msala9/secure-integration-platform/actions/runs/34854788553)
+and [M5/Admin CI](https://github.com/msala9/secure-integration-platform/actions/runs/34854788543).
+This documentary closure reuses those results; it does not attest a new runtime,
+Windows, cloud or external-service test.
 PR #67 integrated the standalone Local Broker protection and SDK peer-authentication
 candidate. Its exact-main General and M5/Admin gates passed; the real Windows Service
 qualification remains attached to software commit
@@ -29,8 +34,9 @@ distinct levels. The integrated baseline does not replace the exact commit of a 
 | Broker → Gateway continuity | **Integrated through PR #68 — targeted synthetic E2E PASS** | Existing Broker identity records authoritative renewal lifecycle, renews single-flight, resumes after restart or a lost renewal response and reports uncertain remote outcomes as non-retryable. Evidence is an in-process Windows transport fixture over the real enrollment, authorization, Published Connector and Synthetic Provider services; it is not a Windows Service or PostgreSQL/live qualification. |
 | Windows x64 delivery | **Integrated through PR #69 — bounded real-service path** | Software `5ad048f...`: self-contained package, non-elevated local use, exact two-build envelope compatibility, restart/rejected-update preservation and real Broker → Gateway/PG/Synthetic Provider with outage recovery passed on Windows 10 Pro 22H2 x64 19045.6466. The account is a member of Administrators; baseline ordinary-token failure remains recorded. See the [observed scope](docs/user/local-broker.md#windows-delivery-observed-on-september-5-2026); no universal Windows, live renewal/DR or production claim. |
 | Application credential adoption | **Integrated through PR #70 — focused tests and real standard-account gate PASS** | Software `8909ab9...`, gate `9ab03c1...`: runtime input, private ciphertext-only storage, new-process use, replacement and failed-save preservation passed under a non-Administrators account. [Observed scope](docs/user/local-broker.md#application-credential-adoption-observed-on-september-6-2026). Application-owned per-Installation credential, not vendor secret retrieval, external authentication, a secretless client or actual management-app/CVD closure. |
-| Own-application Broker administration | **Integrated through PR #78 — bounded ordinary-account service evidence** | Software/package `4a8eb70...`: supported tooling registers, inspects, updates and revokes a named .NET application without hand-editing settings; distinct evaluation app passed the real Windows Service ordinary-account gate. That exact-package evidence is reusable for unchanged properties; it does not qualify a fresh evaluation package or establish release readiness. |
-| Admin UI/API | **Integrated — guided Connector onboarding and operator usability** | First-session entry, responsive layout, explicit UTC dates, bundled guide and Broker/Direct selection are integrated. Five actions across three roles cover Installation/enrollment, definition, binding/grant, four-eyes and first invocation. `FULLSTACK-02` uses PostgreSQL 18 and synthetic identities; not production authentication. |
+| Own-application Broker administration | **BROKER-ADOPT complete — integrated through PR #78** | Supported tooling registers, inspects, updates and revokes a named .NET application without hand-editing settings. Original package `4a8eb70...` and evaluation package `10a1300...` have separate ordinary-account real Windows Service observations. Gateway disabled; no general machine/profile recovery or production claim. |
+| Evaluation delivery | **EVAL-DELIVERY implemented and qualified through PR #79** | Separate Core source `2c2ff27...` and frozen Windows package `10a1300...`, with the [evaluation procedure](docs/user/evaluation.md), provenance and bounded success/recovery evidence below. The new ApoCert binary release is authorized and **IN PREPARATION**, with security verification pending in a separate task. |
+| Admin UI/API | **Integrated through PR #79 — guided onboarding and searchable selections** | One searchable combobox per guided choice, separate Installation/Connector groups and authoritative enrollment/readiness context. User-operated Chrome inspection and automated narrow/UTC-date checks are separate. The 10,000-tenant result covers authenticated API/PostgreSQL search correctness and authorization, not a browser run with 10,000 rows or a production benchmark. `FULLSTACK-02` uses synthetic identities, not production authentication. |
 | Authentication foundation | **Integrated** | Provider-neutral SOAP/session, JWT/X.509, signing and mTLS primitives; they do not automatically qualify an external service. |
 | Targeted security remediation | **Integrated** | Bounded Broker IPC admission and Azure readiness based on reading the configured secret, not metadata alone. These fixes do not establish absence of vulnerabilities, a Connector sandbox or general live-cloud qualification. |
 | Audit export and package preflight | **Integrated through PR #77** | Tenant-scoped, metadata-only audit export with UTC interval/keyset continuation; install/update validates expected source commit and manifest hash before stop/copy. Export is not a database snapshot; package integrity is not publisher authenticity or software signing. No CRA/NIS 2 conformity claim. |
@@ -40,25 +46,46 @@ distinct levels. The integrated baseline does not replace the exact commit of a 
 | FSE2 FHIR `VERIFICA` | **NOT LIVE-QUALIFIED** | Two intentional requests with corrected configuration: upstream 500 / Gateway 502, `generic-error`. Cause undetermined; this code cannot establish a format, accreditation or authorization cause. |
 | FSE2 live document publication | **NOT QUALIFIED** | The current runner permits only VERIFICA and lookup. Publishing a Connector configuration does not publish documents; a `202` does not prove completion towards INI/EDS. |
 | Overall FSE 2.0 Gateway coverage/qualification | **NO** | Offline limited to the 14 frozen routes; live limited to the cases above. Human Actor, inbound callbacks and confirmed native FHIR publication remain excluded. |
-| Institutional source distribution | **Published — 11 Sep 2026** | [ApoCert source snapshot](https://github.com/ApoCert-it/secure-integration-platform/blob/f89f50c37ddfb7671c885bf2fbb753974a467952/SOURCE.md), based on `b13e6ba...`, with independent history and curated documentation. Internal plans and private integrations are excluded. This snapshot is not a new binary release or a stable-API guarantee. |
+| Institutional source distribution | **Published — 14 Sep 2026** | [ApoCert source snapshot](https://github.com/ApoCert-it/secure-integration-platform/blob/a7decd01f8ade8aa866572d82d537c688e54052b/SOURCE.md), based on `2c2ff27...`: 714 tracked files, including preexisting optional packs, with independent history and curated documentation. Internal plans and private integrations are excluded. This source publication is separate from the new binary release in preparation. |
 | Production/accreditation | **NOT QUALIFIED** | Existing tests, internal security review and any separately scoped deployment observations do not establish general production readiness, HA/DR, restore/load/soak, artifact signing, production custody or overall certification. Additional Windows/native targets require their own qualification. |
 
-## Next planned outcome
+## Adoption and evaluation closure
 
 BROKER-ADOPT is integrated through PR #78 with focused review/micro-review reporting
-no P0/P1/P2 findings and DCO 11/11. Its ordinary-account Windows Service result
-remains attached to package `4a8eb70...`. EVAL-DELIVERY prepares two separate
-versioned evaluation artifacts and their success/recovery checks; it is not a release.
+no P0/P1/P2 findings and DCO 11/11. EVAL-DELIVERY is implemented and qualified through
+PR #79 on `2c2ff27...`. The frozen deliverables and observed scopes remain separate:
+
+- **Core source:** `2c2ff275afefb52c02e7660ec80944bcaf3d44a3`; exported archive and
+  extraction inventory verified, with exact-source CI above. The Docker-first first
+  invocation (136.1s) and interrupted-start recovery (39.7s) were observed on the
+  original `10a1300...` export; they are not timings of a rerun on the new archive.
+- **Windows package:** `10a13009c369249cd3c23cf1ab72623fcf1ae929`; real Windows Service
+  register/inspect/protect/verify/restart/update/revoke passed under an ordinary
+  account on Windows 10 Pro 22H2 x64 19045.6466 (40.3s). Broker/SDK/sample/delivery
+  properties are unchanged at `2c2ff27...`; no newly built package is asserted tested.
+  Gateway was disabled, so this is not live Broker/Gateway continuity or portable restore.
+- **Admin:** the user confirmed trusted host Chrome access, import, binding/grants,
+  distinct-role approval/publication, F5 persistence and searchable keyboard operation.
+  The Installation was already Active; this does not prove new enrollment or manual
+  runtime invocation of the inspected version. Narrow layout and UTC dates are
+  automated evidence. The [traceability map](docs/traceability/requirements-traceability.md#evaluation-delivery-integrated-through-pr-79)
+  identifies the named checks and retained candidate record.
+- **Dependencies:** js-yaml 4.3.2 resolves the observed high advisory. Two moderate
+  Vitest/mocker development-tool advisories remain deferred; no zero-vulnerability claim.
 
 PR #78 candidate General/M5 and exact-main M5 passed. Exact-main General Windows
 run `34823625320` failed twice on different tests. The closed investigation did not
 reproduce the failures and did not determine their historical cause; no runtime
 patch was justified. Diagnostic job `103918639919` in run `34826139817` passed on
 `e9c9f63280bc3fd175e41af9e160607c4ad59842`, with test/workflow instrumentation and
-unchanged runtime. That result is not an exact-main PASS. Complete exact-main
-qualification remains unresolved and separate from the new evaluation candidate.
-The development repository's current plan and backlog own the scope; optional
-integrations and enterprise mechanisms remain demand-driven.
+unchanged runtime. That result is not an exact-main PASS. These historical failures
+and their undetermined causes remain recorded. The later PR #79 exact-main SUCCESS
+is a separate qualification and does not rewrite them.
+
+The next product phase is external adoption driven by a concrete need and a bounded
+authorized outcome. New primitives, Connectors and enterprise mechanisms are not
+mandatory next steps. The separately authorized new binary release remains
+**IN PREPARATION**; this closure does not publish it or extend production qualification.
 
 ## Local Broker path — delivery and credential adoption integrated
 
@@ -118,6 +145,7 @@ candidate work is not integration, publication or production qualification.
 
 ## CURRENT paths and provenance
 
+- Evaluation delivery: [separate Core and Windows paths](docs/user/evaluation.md).
 - Core: [quickstart](docs/user/quickstart.md) → [local pilot](docs/user/local-pilot.md).
 - FSE2: [OfficialTest validation and lookup](https://github.com/marcobiz/secure-integration-platform/blob/main/docs/user/fse2-validation-status.md).
   This is the current operational entry point: shipped runner, local bootstrap,

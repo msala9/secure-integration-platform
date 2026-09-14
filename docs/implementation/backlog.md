@@ -1,7 +1,7 @@
 # Backlog ordered by outcome
 
 Updated: 2026-09-14
-Integrated software baseline: `5319d7d404b3c7b04f9810df87ff2757421e6a45` (through PR #78).
+Integrated software baseline: `2c2ff275afefb52c02e7660ec80944bcaf3d44a3` (through PR #79).
 
 This is the work queue, not another capability dashboard.
 [IMPLEMENTATION_STATUS.md](../../IMPLEMENTATION_STATUS.md) owns integrated status;
@@ -17,8 +17,10 @@ outcomes and boundaries. Historical slice tables are preserved [below](#historic
 | Integrated through PR #69 | Target-specific distribution and operation | Bounded real-service qualification passed on software `5ad048f...`, Windows 10 Pro 22H2 x64 19045.6466. | Package, non-elevated use on an Administrators-member account, exact two-build envelope compatibility, restart/rejected-update and real-service → Gateway/PG outage recovery observed. No broader Windows, live renewal/DR or production claim. |
 | Integrated through PR #70 | Remove per-Installation hardcoding/plaintext storage | User approved extending the existing small sample; no new primitive or proxy. | Runtime input, ciphertext-only save, transient authorized use, new execution and safe replacement; short English guide and real non-Administrators-account proof. Focused tests and account gate PASS on software `8909ab9...` / gate `9ab03c1...`; candidate subsequently reviewed and integrated. |
 | Integrated after PR #71 | Admin consolidation and targeted security/delivery controls | Included in the software baseline above. | First access, responsive layout, UTC dates, operator guide, Broker/Direct onboarding alignment, bounded IPC admission, Azure readiness read, tenant audit export and package preflight are integrated; not an assertion of production readiness. |
-| Integrated through PR #78 — BROKER-ADOPT | Register and maintain an adopter's own .NET application | Existing Broker/SDK protection and sample adoption are integrated; local candidate tooling and the distinct evaluation app are implemented on the branch. | **Integrated; real-service evidence remains exact to package `4a8eb70...`.** Supported administrator tooling for explicit registration, inspection, executable update and revocation; no manual service-configuration edits. One ordinary-account real-service proof covers use, restart, old-ciphertext preservation and denial after revocation. |
-| NOW — EVAL-DELIVERY | Versioned, usable evaluation package | BROKER-ADOPT converged; artifact/target and publication scope selected. | One concise setup/verification/recovery guide and the existing pre-alpha usability check on the delivered candidate; source/manifest provenance, known limits and proportionate release checks. No new universal installer. |
+| Complete; integrated through PR #78 — BROKER-ADOPT | Register and maintain an adopter's own .NET application | Supported tooling and the distinct evaluation app are integrated. | Register/inspect/update/revoke without manual service-configuration edits; bounded ordinary-account service evidence on original package `4a8eb70...` and separately on evaluation package `10a1300...`. |
+| Complete; integrated and qualified through PR #79 — EVAL-DELIVERY | Two versioned evaluation paths | Core source `2c2ff27...`, frozen Windows package `10a1300...` and their provenance selected. | Public setup/verification/recovery guide; bounded Core/Admin/Windows observations and exact-main General/M5 SUCCESS (22/22). Original artifact observations retain their exact identities; see the dashboard and traceability. |
+| IN PREPARATION — separate publication task | New ApoCert binary release | Explicit publication authorization and frozen artifacts; security verification pending under an independent owner. | Publish and verify the selected assets/provenance under that task. Institutional source snapshot `a7decd0...` is already published; this document does not assert the new binary release is published. |
+| NEXT — needs-driven external adoption | One concrete adopter outcome | Selected need, explicit authority and bounded acceptance/negative cases. | Use the existing paths; close observed adoption blockers. New primitives or Connectors are not mandatory prerequisites. |
 | DEFERRED | Broader surfaces and additional integrations | A concrete requirement or observed defect, explicit scope and an owner; not hypothetical future reuse. | Define a bounded outcome and relevant negatives before promoting work. Use the triggers below; no new framework or laboratory by default. |
 
 A prerequisite is not evidence of completion. Candidate evidence remains distinct from
@@ -55,6 +57,19 @@ not replace that real-service result.
 No `GetSecret`, copied vendor credentials, mandatory new identity platform or
 additional abstraction is justified solely by an item being deferred.
 
+### Disposition of the two closure review notes
+
+- **Corrected — Admin guide search description:** remove the obsolete “Only Connectors”
+  statement and describe searchable guided choices accurately. The canonical English
+  guide is shared by EN/IT display modes; existing localized navigation remains intact.
+- **Deferred, non-blocking — complexity-governance placement:** retain
+  `docs/internal/complexity-governance.md` and its explicit Core allowlist entry.
+  Its content is public governance, with no private integration material; no broken
+  Core export or agreed adoption criterion requires relocation. Institutional
+  curation excludes it independently. Documentation maintainers may revisit naming
+  or placement when a concrete navigation need justifies the change; no mass move,
+  export change or generic refactor is required for this closure.
+
 The integrated standalone software has targeted Broker/SDK/storage evidence and one passing
 [service verification entrypoint](../user/local-broker.md#one-real-service-verification-entrypoint)
 on exact software candidate `3955fd0c3a5eccf816d44b0faba9a704227baa3d`.
@@ -76,6 +91,13 @@ unchanged, avoid unrelated local suites/SBOM duplication and do not mark a candi
 result integrated or released before it is.
 
 ### Pre-alpha usability qualification
+
+The PR #79 evaluation candidate has completed this bounded qualification; consult
+the [recorded result and limits](../../IMPLEMENTATION_STATUS.md#adoption-and-evaluation-closure).
+The criteria below remain the reference for a later changed candidate. Frozen
+artifact evidence is reused only for unchanged properties, and publication remains
+a separate state. Manual browser inspection, automated layout/date/search checks and
+the original Core/Windows runs must not be conflated.
 
 Before the next evaluation release, qualify the delivered candidate through the public
 entrypoints, once at convergence. The institutional source snapshot does not close

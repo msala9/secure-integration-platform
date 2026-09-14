@@ -1,6 +1,8 @@
 # Evaluate SIP
 
-**Status:** evaluation candidate preparation; no release or publication approval.
+**Status:** evaluation paths implemented and qualified through PR #79. The new
+ApoCert binary release is authorized and **IN PREPARATION**, with security verification
+pending in a separate task.
 Use the exact source commit and artifact hashes supplied in the candidate record.
 The existing product version is `0.1.0-alpha.1`; it does not identify a unique build.
 

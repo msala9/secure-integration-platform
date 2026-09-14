@@ -100,6 +100,33 @@ part of this evidence.
 | Distinct .NET evaluation application | `samples/LocalBrokerAdopter/LocalBrokerAdopter.csproj`; package inventory validation in `eng/Test-LocalBrokerPackage.ps1` | Separate SDK-based executable using exact `adopter-secret` / `text/plain`; package validator permits and checks the optional `adopter` component. Package `4a8eb70...` passed the real-service gate below; Core/sample export build/test and package inventory were separately verified on `b5fee51...`. These retain their source identities after PR #78 integration. |
 | Real ordinary-account adopter lifecycle | `eng/Test-LocalBrokerAdopterAdministration.ps1` | **PASS observed** on package/source `4a8eb70aa399bc32399c69ed283f5ac422aa6e53`, manifest `083EC0E45793B1E65F9DBFA6C200667A576FDEFEBCCDD562BD5B41C4DB2F9F19`: real Windows Service, task-owned ordinary account `BrokerAdopt091404`, status/protect/verify, restart and old-ciphertext verify, authorized executable update preserving old ciphertext, old executable denial, elevated/admin caller denial and revocation denial. Evidence path `C:\SecureEvidence\broker-adopt-realservice-4a8eb70\result.json` is metadata/hash-only; no plaintext/ciphertext retained in the final ledger. |
 
+## Evaluation delivery integrated through PR #79
+
+CURRENT source baseline: `2c2ff275afefb52c02e7660ec80944bcaf3d44a3`, fast-forward
+integrated through PR #79. Exact-main qualification is **SUCCESS**: General
+[34854788553](https://github.com/msala9/secure-integration-platform/actions/runs/34854788553)
+and M5/Admin [34854788543](https://github.com/msala9/secure-integration-platform/actions/runs/34854788543),
+22/22 checks PASS. These results supersede the current qualification gap; they do
+not establish the causes of or erase PR #78's historical Windows failures.
+
+| Requirement | Named evidence | Type, result and limit |
+|---|---|---|
+| Separate usable Core and Windows evaluation paths | `docs/user/evaluation.md`; `Invoke-AlphaGoldenPath.ps1`; `Test-OpenSourceCoreInventory.ps1` | `AUTOMATED` — original Core `10a1300...` Docker-first synthetic Published HTTPS/mTLS invocation PASS (136.1s), interrupted Start/repeated Stop/new Start PASS (39.7s), cleanup zero. Current Core archive source `2c2ff27...` export/extraction inventory PASS with exact-source CI above; original timing is not relabelled as a new archive run. |
+| Actual ordinary-account Broker package administration | `Test-LocalBrokerAdopterAdministration.ps1` | `AUTOMATED`, real Windows Service — exact package/source `10a13009c369249cd3c23cf1ab72623fcf1ae929`, Windows 10 Pro 22H2 x64 19045.6466, register/inspect/protect/verify/restart/update/revoke PASS (40.3s). Gateway disabled; unchanged Broker/SDK/sample/delivery properties reused at `2c2ff27...`, no newly built Windows package or portable restore claim. |
+| Host browser first access and supported role handoffs | User-operated trusted Chrome; inspected Connector 4.0.0 | `MANUAL` — no TLS warning after approved temporary current-user CA trust; import, Security Administrator binding/grants, Editor request, distinct Approver publication and F5 persisted Published/ready. Already Active Installation: no new enrollment or manual runtime invocation of 4.0.0 asserted. User confirmed searchable keyboard/resume usability on `4cb57b1...`; temporary CA and owned preview removed. |
+| Bounded usable guided selections and readiness | `GuidedOnboardingPage.test.tsx` (16 focused cases); `UI-MOCK-38/43/44/45/46/47` (11 cases) | `AUTOMATED` — single-input keyboard search, selected-ID resume, authoritative Installation context, correct Direct/Broker procedure link/focus, 390px layout and UTC midnight dates. Checked axe states have zero critical/serious findings; narrow/date evidence is not manual observation. |
+| Real large-directory search without widening authority | `M5_E2E_Admin_searches_10000_PostgreSQL_tenants_with_bounded_results`; existing tenant-scope and Installation-filter isolation negatives | `AUTOMATED` — actual ASP.NET Admin HTTP pipeline + PostgreSQL 18.2 with 10,000 synthetic tenant rows, bounded pages, last-record filter, duplicate-name pagination, literal SQL-like/no-match queries, selected-ID point-read resume, anonymous 401 and invalid-limit 400. Non-superuser Admin connection and normal authorization/rate limits. API/PostgreSQL correctness/authorization only; no 10,000-row Chrome run, production benchmark or latency SLA. |
+| Artifact provenance and distribution state | Candidate record and institutional publication record below | Core source `2c2ff27...` and Windows `10a1300...` have separate archive/manifest hashes. Institutional source `a7decd01f8ade8aa866572d82d537c688e54052b`, tree `6a72ee7f8e879e656a3ec58dbcc186ff74a4862b`, published 14 Sep 2026: 714 tracked files including preexisting packs, independent history. New binary release **IN PREPARATION** in a separate task; no production or compliance claim. |
+
+Retained redacted records: `C:\SecureEvidence\eval-delivery-10a1300-77fc\candidate-record.md`
+(pre-merge candidate observations and artifact hashes) and
+`C:\SecureEvidence\institutional-snapshot-20260914-a361\publication-record.md`
+(later source publication and exact-main CI reuse). The candidate record's historical
+“not merged” state is superseded by PR #79 integration, not rewritten. The authorized
+binary release remains in preparation with security verification pending. js-yaml 4.3.2
+closes the concrete high advisory; two moderate Vitest/mocker development-tool entries
+remain deferred. No zero-vulnerability, signing or general production qualification.
+
 ## Exact-main DOC-02 evidence map
 
 | Requirement/claim | Named tests or evidence | Exact-main type/status |

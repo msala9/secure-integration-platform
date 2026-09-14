@@ -1,15 +1,15 @@
 # Implementation plan
 
 Updated: 2026-09-14
-Integrated software baseline: `5319d7d404b3c7b04f9810df87ff2757421e6a45` (through PR #78).
+Integrated software baseline: `2c2ff275afefb52c02e7660ec80944bcaf3d44a3` (through PR #79).
 
 This is the current order of work. [IMPLEMENTATION_STATUS.md](../../IMPLEMENTATION_STATUS.md)
 owns integrated capability and qualification claims; the [backlog](backlog.md#current-work-order)
 owns the small NOW/NEXT/DEFERRED queue. The older Core alpha/FSE2 plan is retained
 [below](#historical-planning-snapshot) as history, not a competing active roadmap.
 
-This update records the next development outcomes; it does not claim they are
-implemented or start a new deployment, live campaign or customer integration.
+This update closes BROKER-ADOPT/EVAL-DELIVERY against the recorded qualifications;
+it does not start a new deployment, live campaign or customer integration.
 Execution and publication authority belong to the assigned task, not to a backlog label.
 
 ## Current order of work
@@ -21,9 +21,13 @@ Execution and publication authority belong to the assigned task, not to a backlo
    preflight through PR #77. Do not restart these as separate development projects.
 2. **Integrated through PR #78 — BROKER-ADOPT:** let an adopter register and maintain its own .NET
    application through supported tooling, beyond the bundled `local-sample`.
-3. **NOW — EVAL-DELIVERY:** prepare a versioned evaluation package with one
-   documented success/recovery path and one proportionate convergence check.
-4. **DEFERRED:** new integrations, platforms and enterprise mechanisms require
+3. **Integrated and qualified through PR #79 — EVAL-DELIVERY:** separate Core source
+   `2c2ff27...` and frozen Windows package `10a1300...`, documented success/recovery
+   paths and bounded qualification. The separately authorized new ApoCert binary
+   release is **IN PREPARATION**, not published by this closure.
+4. **NEXT — external adoption:** select a concrete adopter need and one bounded
+   outcome; no new primitive or Connector is a prerequisite.
+5. **DEFERRED:** new integrations, platforms and enterprise mechanisms require
    a concrete consumer or defect; see the [backlog triggers](backlog.md#deferred-work-triggers).
 
 Integrated software, synthetic tests, selected Windows service observations and
@@ -37,8 +41,10 @@ exposes `ProtectData`/`UnprotectData`. The original gap was supported administra
 the Windows delivery script installed `local-sample` and updated its executable hash.
 BROKER-ADOPT adds supported register/inspect/update/revoke tooling and a distinct
 .NET evaluation app, integrated through PR #78. Package `4a8eb70...` passed the
-ordinary-account real-service proof; integration does not change its source identity
-or establish complete exact-main qualification.
+ordinary-account real-service proof; that source identity is preserved. The separate
+evaluation package `10a1300...` also passed its ordinary-account service check.
+PR #79 exact-main `2c2ff27...` passed General and M5/Admin CI (22/22); the later
+qualification does not reinterpret PR #78's historical Windows failures.
 
 Deliver one small, administrator-operated path to register, inspect, update and
 revoke a named application, reusing the existing configuration, policy and SDK.
@@ -72,24 +78,34 @@ native/COM adapter or automatic key rotation is required. Prefer the narrowest
 extension of existing Windows tooling; a new runtime primitive needs an observed
 blocker and an explicit complexity checkpoint.
 
-## NOW — versioned evaluation delivery
+## Integrated — versioned evaluation delivery
 
-After BROKER-ADOPT converges, select the exact artifact and supported target; package
-the existing software, concise setup/verification/recovery instructions, known limits
-and provenance. Reuse historical and exact-source evidence only where applicable.
-Run the [existing pre-alpha usability check](backlog.md#pre-alpha-usability-qualification)
-once on the delivered candidate, including fresh browser access and actual Windows
-package use when that package is included. Record implementation, verification/lab
-and evidence effort separately before starting; this is not a general re-audit or
-a new installer project. A source snapshot is not a tested binary delivery.
+PR #79 closes the implemented evaluation paths and their bounded qualification.
+The [evaluation guide](../user/evaluation.md) separates Docker-first Core from the
+ordinary-account Windows package, including verification, recovery and provenance.
+The [dashboard](../../IMPLEMENTATION_STATUS.md#adoption-and-evaluation-closure) and
+[traceability](../traceability/requirements-traceability.md#evaluation-delivery-integrated-through-pr-79)
+record exact artifacts, manual Chrome observations, automated UI/API checks and limits.
+Core `2c2ff27...` archive/inventory and exact-main CI are distinct from the original
+`10a1300...` Core run/recovery and unchanged Windows package observations.
+The 10,000-tenant check proves API/PostgreSQL search correctness/authorization, not
+a browser/load benchmark. Two moderate development-tool advisories remain deferred.
+
+The new binary release is authorized and **IN PREPARATION**, with security verification
+pending under separate publication ownership.
+Reuse the converged evidence where its properties are unchanged; do not rebuild or
+requalify frozen artifacts merely for documentary closure. Next product work follows
+an observed external adoption need, with its outcome and negative cases agreed first.
 
 ## Development and institutional distribution
 
 This plan and the internal backlog belong to the development repository. The
 [ApoCert distribution](https://github.com/ApoCert-it/secure-integration-platform)
 has independent snapshot history, public capability documentation, a changelog and
-source provenance. Its 11 Sep 2026 source snapshot is based on `b13e6ba...`; it
-does not contain this internal plan or authorize a binary release. Development
+source provenance. Its 14 Sep 2026 source snapshot is commit
+`a7decd01f8ade8aa866572d82d537c688e54052b`, based on `2c2ff27...`: 714 tracked files,
+including preexisting optional packs. It does not contain this internal plan or
+constitute the new binary release. Development
 updates are not mirrored automatically. A separately authorized institutional
 update must select the public deliverables and preserve attribution and provenance;
 private customer integrations, agent instructions and internal planning stay excluded.
@@ -246,7 +262,8 @@ the selected case; a new Connector needs concrete demand and separate authorizat
 
 ## Ownership, measurement and verification
 
-One implementation owner carries EVAL-DELIVERY end-to-end from the integrated plan.
+One implementation owner carries each authorized external-adoption outcome end-to-end
+from the integrated plan; EVAL-DELIVERY implementation and qualification are complete.
 Estimate implementation, verification/laboratory and evidence separately; freeze
 the visible result and essential negatives before coding. Do not split the result
 into a chain of micro-PRs or writer/reviewer handoffs. Parallel work is useful only
