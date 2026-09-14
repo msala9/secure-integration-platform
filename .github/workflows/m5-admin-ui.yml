@@ -146,7 +146,7 @@ jobs:
           set -euo pipefail
           docker exec "${{ job.services.postgres.id }}" psql -v ON_ERROR_STOP=1 -U postgres -d broker_gateway_m5 -c "CREATE ROLE m5_test_admin LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION; GRANT gateway_admin TO m5_test_admin;"
           dotnet test tests/integration/Gateway.Integration.Tests/Gateway.Integration.Tests.csproj -c Release --filter "FullyQualifiedName~PostgresIsolationTests"
-          dotnet test tests/integration/Gateway.Integration.Tests/Gateway.Integration.Tests.csproj -c Release --no-build --filter "FullyQualifiedName=SecureIntegration.Gateway.Integration.Tests.AdminApiPostgreSqlSecurityTests.M5_E2E_Admin_approval_publish_runtime_provider_transport_prevents_credential_exfiltration"
+          dotnet test tests/integration/Gateway.Integration.Tests/Gateway.Integration.Tests.csproj -c Release --no-build --filter "FullyQualifiedName~SecureIntegration.Gateway.Integration.Tests.AdminApiPostgreSqlSecurityTests.M5_E2E_Admin_"
       - name: Verify non-superuser roles and provider catalog least privilege
         shell: bash
         env: { POSTGRES_SERVICE_ID: '${{ job.services.postgres.id }}' }

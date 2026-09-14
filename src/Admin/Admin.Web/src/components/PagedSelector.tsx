@@ -25,7 +25,7 @@ export function PagedSelector<T>({ id, label, value, page, selectedItem, onChang
   return <Stack spacing={0.5} sx={{ minWidth: 0, width: '100%', flex: '1 1 auto', maxWidth: '100%' }}>
     {search ? <Autocomplete
       id={id} size="small" value={value || null}
-      options={busy ? [] : [...(value && !selectedOnPage ? [value] : []), ...page.items.map(optionValue)]}
+      options={busy ? [] : page.items.map(optionValue)}
       getOptionLabel={optionLabel} filterOptions={options => options}
       loading={busy} loadingText={t('loading')} noOptionsText={t('selectorNoResults')}
       openText={t('selectorOpen')} closeText={t('close')} clearText={t('selectorClear')}

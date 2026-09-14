@@ -300,6 +300,60 @@ public sealed class AdminApiSecurityTests
         return tenantId;
     }
 
+    internal static async Task RunPostgreSqlTenantSearchAsync()
+    {
+        string? adminConnection = Environment.GetEnvironmentVariable("GATEWAY_POSTGRES_ADMIN_CONNECTION");
+        string? migrationConnection = Environment.GetEnvironmentVariable("GATEWAY_POSTGRES_MIGRATION_CONNECTION");
+        if (string.IsNullOrWhiteSpace(adminConnection) || string.IsNullOrWhiteSpace(migrationConnection))
+            Assert.Skip("The 10,000-tenant API search requires the dedicated PostgreSQL 18 gate.");
+        await using PostgresRuntimeRoleLease runtimeRole = await PostgresRuntimeRoleLease.CreateAsync(adminConnection, migrationConnection, TestContext.Current.CancellationToken);
+        await using WebApplicationFactory<Program> factory = new AdminDevelopmentFactory().WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("ConnectionStrings:GatewayDatabase", runtimeRole.ConnectionString);
+            builder.UseSetting("ConnectionStrings:GatewayAdminDatabase", adminConnection);
+        });
+        await using NpgsqlConnection owner = new(migrationConnection);
+        await owner.OpenAsync(TestContext.Current.CancellationToken);
+        string prefix = "search-" + Guid.NewGuid().ToString("N");
+        try
+        {
+            await using NpgsqlCommand seed = new("INSERT INTO gateway.tenant(id,code,display_name,status,created_at) SELECT gen_random_uuid(), @prefix || '-' || lpad(n::text,5,'0'), CASE WHEN n>=9998 THEN @prefix || ' shared' ELSE 'Tenant ' || n::text END, 'active', now() FROM generate_series(0,9999) n", owner);
+            seed.Parameters.AddWithValue("prefix", prefix);
+            Assert.Equal(10000, await seed.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
+            using HttpClient client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+            using HttpResponseMessage anonymous = await client.GetAsync("/admin/api/v1/tenants?limit=50", TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+            _ = await LoginAsync(client, "security-admin", TestContext.Current.CancellationToken);
+            async Task<AdminPage<TenantRecord>> Search(string filter, int offset = 0, int limit = 50) =>
+                await client.GetFromJsonAsync<AdminPage<TenantRecord>>($"/admin/api/v1/tenants?filter={Uri.EscapeDataString(filter)}&offset={offset}&limit={limit}", WireJson, TestContext.Current.CancellationToken)
+                ?? throw new InvalidOperationException("Missing tenant page.");
+            AdminPage<TenantRecord> first = await Search(prefix);
+            Assert.Equal(10000, first.Total);
+            Assert.Equal(50, first.Items.Count);
+            AdminPage<TenantRecord> last = await Search(" " + prefix.ToUpperInvariant() + "-09999 ");
+            Assert.Equal(1, last.Total);
+            TenantRecord selected = Assert.Single(last.Items);
+            Assert.Equal(prefix + "-09999", selected.Code);
+            AdminPage<TenantRecord> duplicateA = await Search(prefix + " shared", 0, 1);
+            AdminPage<TenantRecord> duplicateB = await Search(prefix + " shared", 1, 1);
+            Assert.Equal(2, duplicateA.Total);
+            Assert.NotEqual(Assert.Single(duplicateA.Items).Id, Assert.Single(duplicateB.Items).Id);
+            Assert.Equal(selected.Id, Assert.Single(duplicateB.Items).Id);
+            Assert.Empty((await Search(prefix + "-absent")).Items);
+            Assert.Empty((await Search("%_' OR 1=1 --")).Items);
+            TenantRecord? resumed = await client.GetFromJsonAsync<TenantRecord>($"/admin/api/v1/tenants/{selected.Id:D}", WireJson, TestContext.Current.CancellationToken);
+            Assert.Equal(selected.Id, resumed?.Id);
+            using HttpResponseMessage oversized = await client.GetAsync("/admin/api/v1/tenants?limit=101", TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.BadRequest, oversized.StatusCode);
+        }
+        finally
+        {
+            await using NpgsqlCommand cleanup = new("DELETE FROM gateway.tenant WHERE starts_with(code,@prefix)", owner);
+            cleanup.Parameters.AddWithValue("prefix", prefix + "-");
+            await cleanup.ExecuteNonQueryAsync(CancellationToken.None);
+        }
+    }
+
     internal static async Task RunPostgreSqlApprovalPublishAntiExfiltrationAsync()
     {
         string? adminConnectionString = Environment.GetEnvironmentVariable("GATEWAY_POSTGRES_ADMIN_CONNECTION");
@@ -1545,6 +1599,10 @@ public sealed class AdminApiSecurityTests
 [Collection(PostgreSqlSharedDatabaseGroup.Name)]
 public sealed class AdminApiPostgreSqlSecurityTests
 {
+    [Fact]
+    public Task M5_E2E_Admin_searches_10000_PostgreSQL_tenants_with_bounded_results() =>
+        AdminApiSecurityTests.RunPostgreSqlTenantSearchAsync();
+
     [Fact]
     public Task M5_E2E_Admin_approval_publish_runtime_provider_transport_prevents_credential_exfiltration() =>
         AdminApiSecurityTests.RunPostgreSqlApprovalPublishAntiExfiltrationAsync();

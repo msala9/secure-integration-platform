@@ -88,6 +88,17 @@ describe('guided selection and targeted refresh', () => {
     expect(screen.queryByRole('option', { name: /Obsolete tenant/ })).not.toBeInTheDocument();
   });
 
+  it('keeps the selected tenant on resume without inserting it into unrelated search results', async () => {
+    const { history } = mount();
+    const selector = await screen.findByRole('combobox', { name: i18n.t('selectTenant') });
+    await waitFor(() => expect(selector).toHaveValue('Selected tenant · tenant-code'));
+    fireEvent.change(selector, { target: { value: 'no-match' } });
+    await waitFor(() => expect(adminApi.tenants).toHaveBeenCalledWith(0, 50, 'no-match'));
+    expect(await screen.findByText(i18n.t('selectorNoResults'))).toBeVisible();
+    expect(screen.queryByRole('option', { name: 'Selected tenant · tenant-code' })).not.toBeInTheDocument();
+    expect(new URLSearchParams(history.location.search).get('tenant')).toBe('tenant');
+  });
+
   it('shows the Installation application and environment instead of stale URL selections after reload', async () => {
     const assertTarget = async () => {
       await screen.findByRole('button', { name: i18n.t('requestApproval') });
