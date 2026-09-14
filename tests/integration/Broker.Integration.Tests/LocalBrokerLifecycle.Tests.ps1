@@ -23,7 +23,7 @@ $fixture = Join-Path ([IO.Path]::GetTempPath()) ('broker-lifecycle-test-' + [gui
 $root = Join-Path $fixture 'install'; $data = Join-Path $fixture 'data'; $marker = Join-Path $root 'installation.json'
 $name = 'SecureIntegrationBroker.Local.fixture'
 $binaryPath = '"' + (Join-Path $root 'broker.exe') + '"'
-$script:service = $null; $script:stops = 0; $script:copies = 0
+$script:service = $null; $script:stops = 0; $script:copies = 0; $script:copySawInitializationDisabled = $false
 function Get-CimInstance { param($ClassName, $Filter) return $script:service }
 function Invoke-ServiceAction { param($Action) if ($Action -cne 'Stop') { throw 'UNEXPECTED_SCM_MUTATION' }; $script:stops++; $script:service.State = 'Stopped' }
 function Get-Service { param($Name) return [pscustomobject]@{} | Add-Member -MemberType ScriptMethod -Name WaitForStatus -Value { param($State, $Timeout) if ($State -ne 'Stopped') { throw 'UNEXPECTED_WAIT' } } -PassThru }
@@ -148,6 +148,9 @@ try {
     function Copy-Published {
         param($Source, $Destination)
         $script:copies++
+        $persisted = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
+        Assert (-not $persisted.Broker.InitializeDataKeys)
+        $script:copySawInitializationDisabled = $true
         throw 'LOCAL_BROKER_COPY_FIXTURE_FAILURE'
     }
     $updatePackage = Join-Path $fixture 'update-package'
@@ -211,6 +214,7 @@ try {
     # invocation of Stop. Every subsequent settings/copy statement is shipped code.
     $updateAfterStop = ($updateBranch.Clauses[0].Item2.Statements | Select-Object -Skip 2 | ForEach-Object { $_.Extent.Text }) -join "`n"
     ExpectDenied { & ([ScriptBlock]::Create($updateAfterStop)) }
+    Assert $script:copySawInitializationDisabled
     $persisted = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
     Assert (-not $persisted.Broker.InitializeDataKeys -and $persisted.Broker.InstallationId -ceq 'preserve-id')
     Assert ($persisted.Broker.Applications[0].AllowedUserSids[0] -ceq $ApplicationUserSid)
