@@ -373,3 +373,34 @@ Metadata-only attempt-4 result SHA-256:
 This proves the sample's local adoption path, not an actual management-app migration,
 CVD closure, external credential change/authentication, machine/profile recovery,
 another Windows target or protection against injected code or Administrator/SYSTEM.
+
+## Own-application administration observed on September 14, 2026
+
+Software/package commit: `4a8eb70aa399bc32399c69ed283f5ac422aa6e53`.
+Package manifest SHA-256:
+`083EC0E45793B1E65F9DBFA6C200667A576FDEFEBCCDD562BD5B41C4DB2F9F19`.
+Host: Windows 10 Pro 22H2 x64 19045. The result is candidate branch evidence,
+not an integrated main, signed-release or production-readiness claim.
+
+`eng/Test-LocalBrokerAdopterAdministration.ps1` passed with task-owned service
+`SecureIntegrationBroker.Local.adopter-091404` and ordinary account
+`BrokerAdopt091404` outside the running administrator process. The gate used the
+closed package, installed the real Windows Service, initialized the Broker key,
+registered the distinct `SecureIntegration.Samples.LocalBrokerAdopter.exe`
+application, then executed new ordinary-account processes for status, Protect and
+Unprotect. It restarted the service and verified the original ciphertext, authorized
+a replacement executable while preserving the old ciphertext, denied the old
+executable, denied the elevated administrator caller and denied use after revocation.
+
+The revocation left registration metadata, other registrations, Installation state,
+keys and protected state intact. The evidence ledger at
+`C:\SecureEvidence\broker-adopt-realservice-4a8eb70\result.json` records only
+metadata and SHA-256 hashes. The synthetic envelope was removed after the result;
+child stdout/stderr files contain bounded pass/denial markers only.
+
+Residual limits remain: this does not prove another Windows version, package signing,
+machine/profile recovery, external issuer revocation, a real management application,
+or protection against Administrator/SYSTEM or code injected into an authorized
+process. Two earlier failed task-owned attempts left stopped/running diagnostic
+instances and disabled local accounts for cleanup; they are not part of the PASS
+claim.

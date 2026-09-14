@@ -36,8 +36,8 @@ The runtime already accepts explicit application registrations, and the SDK alre
 exposes `ProtectData`/`UnprotectData`. The original gap was supported administration:
 the Windows delivery script installed `local-sample` and updated its executable hash.
 The current BROKER-ADOPT candidate adds supported register/inspect/update/revoke
-tooling and a distinct .NET evaluation app; it remains pending the required
-ordinary-account real-service proof before integration.
+tooling and a distinct .NET evaluation app. Package `4a8eb70...` passed the required
+ordinary-account real-service proof; it remains pending focused review/integration.
 
 Deliver one small, administrator-operated path to register, inspect, update and
 revoke a named application, reusing the existing configuration, policy and SDK.
