@@ -252,7 +252,7 @@ try {
     $Command = 'RegisterApplication'
     & ([ScriptBlock]::Create($registerBranch.Extent.Text)) | Out-Null
     $registered = Read-Settings
-    Assert (-not $registered.Broker.InitializeDataKeys)
+    Assert ($registered.Broker.InitializeDataKeys)
     Assert (@($registered.Broker.Applications).Count -eq 2)
     $appIndex = Get-ApplicationIndex $registered 'adopter-eval'
     Assert ($appIndex -eq 1)
@@ -268,6 +268,7 @@ try {
     $Command = 'UpdateApplication'
     & ([ScriptBlock]::Create($applicationUpdateBranch.Extent.Text)) | Out-Null
     $updated = Read-Settings
+    Assert ($updated.Broker.InitializeDataKeys)
     Assert ($updated.Broker.Applications[$appIndex].RegistrationId -ceq 'adopter-eval')
     Assert ($updated.Broker.Applications[$appIndex].ExecutablePaths[0] -ceq $adopterV2)
     Assert ($updated.Broker.Applications[$appIndex].ExecutableSha256[0] -ceq (Get-FileHash -LiteralPath $adopterV2 -Algorithm SHA256).Hash)
@@ -275,6 +276,7 @@ try {
     $Command = 'RevokeApplication'
     & ([ScriptBlock]::Create($revokeBranch.Extent.Text)) | Out-Null
     $revoked = Read-Settings
+    Assert ($revoked.Broker.InitializeDataKeys)
     Assert (@($revoked.Broker.Applications).Count -eq 2)
     Assert ($revoked.Broker.Applications[$appIndex].RegistrationId -ceq 'adopter-eval')
     Assert (@($revoked.Broker.Applications[$appIndex].AllowedUserSids).Count -eq 0)

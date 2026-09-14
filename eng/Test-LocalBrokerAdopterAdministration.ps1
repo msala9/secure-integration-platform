@@ -151,6 +151,8 @@ try {
     $passwordPlain = $null
 
     & $lifecycle -Command Install -Instance $Instance -BrokerPublishDirectory (Join-Path $package 'broker') -SamplePublishDirectory (Join-Path $package 'sample') -AdopterPublishDirectory (Join-Path $package 'adopter') -ApplicationUserSid $sid -ExpectedSourceCommit $ExpectedSourceCommit -ExpectedManifestSha256 $ExpectedManifestSha256 | Out-Null
+    & $lifecycle -Command Start -Instance $Instance | Out-Null
+    & $lifecycle -Command Stop -Instance $Instance | Out-Null
     $adopter = Join-Path $root 'adopter\SecureIntegration.Samples.LocalBrokerAdopter.exe'
     $adopterV2Root = Join-Path $root 'adopter-v2'
     Copy-Item -LiteralPath (Join-Path $root 'adopter') -Destination $adopterV2Root -Recurse

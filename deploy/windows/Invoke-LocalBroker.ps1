@@ -379,7 +379,6 @@ if ($Command -eq 'RegisterApplication') {
     if ($settings.Broker.Gateway.Enabled) { throw 'LOCAL_BROKER_APPLICATION_GATEWAY_MUST_BE_DISABLED' }
     if ((Get-ApplicationIndex $settings $ApplicationRegistrationId) -ne -1) { throw 'LOCAL_BROKER_APPLICATION_ALREADY_REGISTERED' }
     $settings.Broker.Applications += (New-ApplicationPolicy)
-    $settings.Broker.InitializeDataKeys = $false
     Write-Settings $settings
     Write-Output ('APPLICATION_REGISTERED=' + $ApplicationRegistrationId + ' NEXT=START')
     return
@@ -396,7 +395,6 @@ if ($Command -eq 'UpdateApplication') {
     if ($settings.Broker.Applications[$index].AllowedUserSids.Count -eq 0) {
         $settings.Broker.Applications[$index].AllowedUserSids = @((Get-ApplicationUserSid))
     }
-    $settings.Broker.InitializeDataKeys = $false
     Write-Settings $settings
     Write-Output ('APPLICATION_UPDATED=' + $ApplicationRegistrationId + ' NEXT=START')
     return
@@ -411,7 +409,6 @@ if ($Command -eq 'RevokeApplication') {
     $settings.Broker.Applications[$index].AllowedOperations = @()
     $settings.Broker.Applications[$index].AllowedDataProtectionContexts = @()
     $settings.Broker.Applications[$index].GatewayGrants = @()
-    $settings.Broker.InitializeDataKeys = $false
     Write-Settings $settings
     Write-Output ('APPLICATION_REVOKED=' + $ApplicationRegistrationId + ' NEXT=START')
     return
