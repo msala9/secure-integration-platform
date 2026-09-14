@@ -66,17 +66,17 @@ public sealed record AdminAuditExportPage<T>(IReadOnlyList<T> Items, int Limit, 
 public interface IAdminDirectoryStore
 {
     /// <summary>Lists tenants in a bounded page.</summary>
-    Task<AdminPage<TenantRecord>> ListTenantsAsync(int offset, int limit, CancellationToken cancellationToken);
+    Task<AdminPage<TenantRecord>> ListTenantsAsync(int offset, int limit, CancellationToken cancellationToken, string? filter = null);
     /// <summary>Gets one Tenant including its concurrency token.</summary>
     Task<TenantRecord?> GetTenantAsync(Guid tenantId, CancellationToken cancellationToken);
     /// <summary>Lists applications in a bounded page.</summary>
-    Task<AdminPage<ApplicationRecord>> ListApplicationsAsync(int offset, int limit, CancellationToken cancellationToken);
+    Task<AdminPage<ApplicationRecord>> ListApplicationsAsync(int offset, int limit, CancellationToken cancellationToken, string? filter = null);
     /// <summary>Gets one Application including its concurrency token.</summary>
     Task<ApplicationRecord?> GetApplicationAsync(Guid applicationId, CancellationToken cancellationToken);
     /// <summary>Lists deployment environments in a bounded page.</summary>
-    Task<AdminPage<GatewayEnvironmentRecord>> ListEnvironmentsAsync(int offset, int limit, CancellationToken cancellationToken);
+    Task<AdminPage<GatewayEnvironmentRecord>> ListEnvironmentsAsync(int offset, int limit, CancellationToken cancellationToken, string? filter = null);
     /// <summary>Lists installations inside one authorized tenant.</summary>
-    Task<AdminPage<InstallationRecord>> ListInstallationsAsync(Guid tenantId, int offset, int limit, CancellationToken cancellationToken);
+    Task<AdminPage<InstallationRecord>> ListInstallationsAsync(Guid tenantId, int offset, int limit, CancellationToken cancellationToken, string? filter = null, Guid? applicationId = null, Guid? environmentId = null);
     /// <summary>Gets one installation inside one authorized tenant.</summary>
     Task<InstallationRecord?> GetInstallationAsync(Guid tenantId, Guid installationId, CancellationToken cancellationToken);
     /// <summary>Lists operation grants inside one authorized tenant.</summary>

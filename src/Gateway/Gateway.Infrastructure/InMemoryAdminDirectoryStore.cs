@@ -7,8 +7,11 @@ namespace SecureIntegration.Gateway.Infrastructure;
 public sealed class InMemoryAdminDirectoryStore(InMemoryGatewayRegistry registry) : IAdminDirectoryStore
 {
     /// <inheritdoc />
-    public Task<AdminPage<TenantRecord>> ListTenantsAsync(int offset, int limit, CancellationToken cancellationToken) =>
-        Page(registry.SnapshotDirectory().Tenants.OrderBy(value => value.Code), offset, limit, cancellationToken);
+    public Task<AdminPage<TenantRecord>> ListTenantsAsync(int offset, int limit, CancellationToken cancellationToken, string? filter = null)
+    {
+        string search = AdminDirectoryFilter.Normalize(filter);
+        return Page(registry.SnapshotDirectory().Tenants.Where(value => (value.Id.ToString("D").Equals(search, StringComparison.OrdinalIgnoreCase) || AdminDirectoryFilter.Matches(value.Code, value.DisplayName, search))).OrderBy(value => value.Code).ThenBy(value => value.Id), offset, limit, cancellationToken);
+    }
 
     /// <inheritdoc />
     public Task<TenantRecord?> GetTenantAsync(Guid tenantId, CancellationToken cancellationToken)
@@ -18,8 +21,11 @@ public sealed class InMemoryAdminDirectoryStore(InMemoryGatewayRegistry registry
     }
 
     /// <inheritdoc />
-    public Task<AdminPage<ApplicationRecord>> ListApplicationsAsync(int offset, int limit, CancellationToken cancellationToken) =>
-        Page(registry.SnapshotDirectory().Applications.OrderBy(value => value.Code), offset, limit, cancellationToken);
+    public Task<AdminPage<ApplicationRecord>> ListApplicationsAsync(int offset, int limit, CancellationToken cancellationToken, string? filter = null)
+    {
+        string search = AdminDirectoryFilter.Normalize(filter);
+        return Page(registry.SnapshotDirectory().Applications.Where(value => (value.Id.ToString("D").Equals(search, StringComparison.OrdinalIgnoreCase) || AdminDirectoryFilter.Matches(value.Code, value.DisplayName, search))).OrderBy(value => value.Code).ThenBy(value => value.Id), offset, limit, cancellationToken);
+    }
 
     /// <inheritdoc />
     public Task<ApplicationRecord?> GetApplicationAsync(Guid applicationId, CancellationToken cancellationToken)
@@ -29,12 +35,20 @@ public sealed class InMemoryAdminDirectoryStore(InMemoryGatewayRegistry registry
     }
 
     /// <inheritdoc />
-    public Task<AdminPage<GatewayEnvironmentRecord>> ListEnvironmentsAsync(int offset, int limit, CancellationToken cancellationToken) =>
-        Page(registry.SnapshotDirectory().Environments.OrderBy(value => value.Code), offset, limit, cancellationToken);
+    public Task<AdminPage<GatewayEnvironmentRecord>> ListEnvironmentsAsync(int offset, int limit, CancellationToken cancellationToken, string? filter = null)
+    {
+        string search = AdminDirectoryFilter.Normalize(filter);
+        return Page(registry.SnapshotDirectory().Environments.Where(value => (value.Id.ToString("D").Equals(search, StringComparison.OrdinalIgnoreCase) || AdminDirectoryFilter.Matches(value.Code, value.DisplayName, search))).OrderBy(value => value.Code).ThenBy(value => value.Id), offset, limit, cancellationToken);
+    }
 
     /// <inheritdoc />
-    public Task<AdminPage<InstallationRecord>> ListInstallationsAsync(Guid tenantId, int offset, int limit, CancellationToken cancellationToken) =>
-        Page(registry.SnapshotDirectory().Installations.Where(value => value.TenantId == tenantId).OrderByDescending(value => value.CreatedAt), offset, limit, cancellationToken);
+    public Task<AdminPage<InstallationRecord>> ListInstallationsAsync(Guid tenantId, int offset, int limit, CancellationToken cancellationToken, string? filter = null, Guid? applicationId = null, Guid? environmentId = null)
+    {
+        string search = AdminDirectoryFilter.Normalize(filter);
+        return Page(registry.SnapshotDirectory().Installations.Where(value => value.TenantId == tenantId &&
+            (applicationId is null || value.ApplicationId == applicationId) && (environmentId is null || value.EnvironmentId == environmentId) &&
+            value.Id.ToString("D").Contains(search, StringComparison.OrdinalIgnoreCase)).OrderByDescending(value => value.CreatedAt).ThenBy(value => value.Id), offset, limit, cancellationToken);
+    }
 
     /// <inheritdoc />
     public Task<InstallationRecord?> GetInstallationAsync(Guid tenantId, Guid installationId, CancellationToken cancellationToken)

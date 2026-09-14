@@ -12,32 +12,32 @@ public sealed class PostgresAdminDirectoryStore(AdminPostgresDataSource adminDat
 {
     private readonly NpgsqlDataSource dataSource = adminDataSource.Value;
     /// <inheritdoc />
-    public Task<AdminPage<TenantRecord>> ListTenantsAsync(int offset, int limit, CancellationToken cancellationToken) => QueryAsync<TenantRecord>(
-        "SELECT id,code,display_name,status,created_at,row_version FROM gateway.tenant ORDER BY code,id OFFSET $1 LIMIT $2", "SELECT count(*) FROM gateway.tenant",
-        ReadTenant, offset, limit, cancellationToken);
+    public Task<AdminPage<TenantRecord>> ListTenantsAsync(int offset, int limit, CancellationToken cancellationToken, string? filter = null) => QueryAsync<TenantRecord>(
+        "SELECT id,code,display_name,status,created_at,row_version FROM gateway.tenant WHERE id::text=lower(@search) OR strpos(lower(code),lower(@search))>0 OR strpos(lower(display_name),lower(@search))>0 ORDER BY code,id OFFSET @offset LIMIT @limit", "SELECT count(*) FROM gateway.tenant WHERE id::text=lower(@search) OR strpos(lower(code),lower(@search))>0 OR strpos(lower(display_name),lower(@search))>0",
+        ReadTenant, offset, limit, cancellationToken, filter);
 
     /// <inheritdoc />
     public Task<TenantRecord?> GetTenantAsync(Guid tenantId, CancellationToken cancellationToken) => GetAsync(
         "SELECT id,code,display_name,status,created_at,row_version FROM gateway.tenant WHERE id=$1", tenantId, ReadTenant, cancellationToken);
 
     /// <inheritdoc />
-    public Task<AdminPage<ApplicationRecord>> ListApplicationsAsync(int offset, int limit, CancellationToken cancellationToken) => QueryAsync<ApplicationRecord>(
-        "SELECT id,code,display_name,status,minimum_broker_version,maximum_broker_version,created_at,row_version FROM gateway.application ORDER BY code,id OFFSET $1 LIMIT $2", "SELECT count(*) FROM gateway.application",
-        ReadApplication, offset, limit, cancellationToken);
+    public Task<AdminPage<ApplicationRecord>> ListApplicationsAsync(int offset, int limit, CancellationToken cancellationToken, string? filter = null) => QueryAsync<ApplicationRecord>(
+        "SELECT id,code,display_name,status,minimum_broker_version,maximum_broker_version,created_at,row_version FROM gateway.application WHERE id::text=lower(@search) OR strpos(lower(code),lower(@search))>0 OR strpos(lower(display_name),lower(@search))>0 ORDER BY code,id OFFSET @offset LIMIT @limit", "SELECT count(*) FROM gateway.application WHERE id::text=lower(@search) OR strpos(lower(code),lower(@search))>0 OR strpos(lower(display_name),lower(@search))>0",
+        ReadApplication, offset, limit, cancellationToken, filter);
 
     /// <inheritdoc />
     public Task<ApplicationRecord?> GetApplicationAsync(Guid applicationId, CancellationToken cancellationToken) => GetAsync(
         "SELECT id,code,display_name,status,minimum_broker_version,maximum_broker_version,created_at,row_version FROM gateway.application WHERE id=$1", applicationId, ReadApplication, cancellationToken);
 
     /// <inheritdoc />
-    public Task<AdminPage<GatewayEnvironmentRecord>> ListEnvironmentsAsync(int offset, int limit, CancellationToken cancellationToken) => QueryAsync<GatewayEnvironmentRecord>(
-        "SELECT id,code,display_name,production_controls FROM gateway.environment ORDER BY code,id OFFSET $1 LIMIT $2", "SELECT count(*) FROM gateway.environment",
-        reader => new(reader.GetGuid(0), reader.GetString(1), reader.GetString(2), reader.GetBoolean(3)), offset, limit, cancellationToken);
+    public Task<AdminPage<GatewayEnvironmentRecord>> ListEnvironmentsAsync(int offset, int limit, CancellationToken cancellationToken, string? filter = null) => QueryAsync<GatewayEnvironmentRecord>(
+        "SELECT id,code,display_name,production_controls FROM gateway.environment WHERE id::text=lower(@search) OR strpos(lower(code),lower(@search))>0 OR strpos(lower(display_name),lower(@search))>0 ORDER BY code,id OFFSET @offset LIMIT @limit", "SELECT count(*) FROM gateway.environment WHERE id::text=lower(@search) OR strpos(lower(code),lower(@search))>0 OR strpos(lower(display_name),lower(@search))>0",
+        reader => new(reader.GetGuid(0), reader.GetString(1), reader.GetString(2), reader.GetBoolean(3)), offset, limit, cancellationToken, filter);
 
     /// <inheritdoc />
-    public Task<AdminPage<InstallationRecord>> ListInstallationsAsync(Guid tenantId, int offset, int limit, CancellationToken cancellationToken) => QueryTenantAsync<InstallationRecord>(tenantId,
-        "SELECT i.id,i.tenant_id,i.application_id,i.environment_id,i.status,i.broker_version,i.created_at,i.last_seen_at,i.revoked_at,i.revocation_reason,i.installation_kind,i.client_version,i.updated_at,c.id,c.status,encode(c.certificate_sha256,'hex'),encode(c.spki_sha256,'hex'),c.serial_number,c.not_before,c.not_after FROM gateway.installation i LEFT JOIN LATERAL (SELECT ic.* FROM gateway.installation_credential ic WHERE ic.installation_id=i.id ORDER BY CASE ic.status WHEN 'active' THEN 0 WHEN 'overlap' THEN 1 ELSE 2 END,ic.created_at DESC LIMIT 1) c ON true WHERE i.tenant_id=$1 ORDER BY i.created_at DESC,i.id OFFSET $2 LIMIT $3", "SELECT count(*) FROM gateway.installation WHERE tenant_id=$1",
-        reader => ReadInstallation(reader), offset, limit, cancellationToken);
+    public Task<AdminPage<InstallationRecord>> ListInstallationsAsync(Guid tenantId, int offset, int limit, CancellationToken cancellationToken, string? filter = null, Guid? applicationId = null, Guid? environmentId = null) => QueryTenantAsync<InstallationRecord>(tenantId,
+        "SELECT i.id,i.tenant_id,i.application_id,i.environment_id,i.status,i.broker_version,i.created_at,i.last_seen_at,i.revoked_at,i.revocation_reason,i.installation_kind,i.client_version,i.updated_at,c.id,c.status,encode(c.certificate_sha256,'hex'),encode(c.spki_sha256,'hex'),c.serial_number,c.not_before,c.not_after FROM gateway.installation i LEFT JOIN LATERAL (SELECT ic.* FROM gateway.installation_credential ic WHERE ic.installation_id=i.id ORDER BY CASE ic.status WHEN 'active' THEN 0 WHEN 'overlap' THEN 1 ELSE 2 END,ic.created_at DESC LIMIT 1) c ON true WHERE i.tenant_id=@tenant AND strpos(i.id::text,lower(@search))>0 AND (@application::uuid IS NULL OR i.application_id=@application) AND (@environment::uuid IS NULL OR i.environment_id=@environment) ORDER BY i.created_at DESC,i.id OFFSET @offset LIMIT @limit", "SELECT count(*) FROM gateway.installation WHERE tenant_id=@tenant AND strpos(id::text,lower(@search))>0 AND (@application::uuid IS NULL OR application_id=@application) AND (@environment::uuid IS NULL OR environment_id=@environment)",
+        reader => ReadInstallation(reader), offset, limit, cancellationToken, AdminDirectoryFilter.Normalize(filter), applicationId, environmentId);
 
     /// <inheritdoc />
     public async Task<InstallationRecord?> GetInstallationAsync(Guid tenantId, Guid installationId, CancellationToken cancellationToken)
@@ -85,15 +85,20 @@ public sealed class PostgresAdminDirectoryStore(AdminPostgresDataSource adminDat
         return values;
     }
 
-    private async Task<AdminPage<T>> QueryAsync<T>(string sql, string countSql, Func<NpgsqlDataReader, T> read, int offset, int limit, CancellationToken cancellationToken)
+    private async Task<AdminPage<T>> QueryAsync<T>(string sql, string countSql, Func<NpgsqlDataReader, T> read, int offset, int limit, CancellationToken cancellationToken, string? filter = null)
     {
         ValidatePage(offset, limit);
+        string search = AdminDirectoryFilter.Normalize(filter);
         List<T> values = [];
         await using NpgsqlConnection connection = await dataSource.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         int total;
-        await using (NpgsqlCommand count = new(countSql, connection)) total = Convert.ToInt32(await count.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false), System.Globalization.CultureInfo.InvariantCulture);
+        await using (NpgsqlCommand count = new(countSql, connection))
+        {
+            count.Parameters.AddWithValue("search", search);
+            total = Convert.ToInt32(await count.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false), System.Globalization.CultureInfo.InvariantCulture);
+        }
         await using NpgsqlCommand command = new(sql, connection);
-        command.Parameters.AddWithValue(offset); command.Parameters.AddWithValue(limit);
+        command.Parameters.AddWithValue("offset", offset); command.Parameters.AddWithValue("limit", limit); command.Parameters.AddWithValue("search", search);
         await using NpgsqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) values.Add(read(reader));
         return new(values, offset, limit, total);
@@ -108,7 +113,7 @@ public sealed class PostgresAdminDirectoryStore(AdminPostgresDataSource adminDat
         return await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? read(reader) : default;
     }
 
-    private async Task<AdminPage<T>> QueryTenantAsync<T>(Guid tenantId, string sql, string countSql, Func<NpgsqlDataReader, T> read, int offset, int limit, CancellationToken cancellationToken)
+    private async Task<AdminPage<T>> QueryTenantAsync<T>(Guid tenantId, string sql, string countSql, Func<NpgsqlDataReader, T> read, int offset, int limit, CancellationToken cancellationToken, string? filter = null, Guid? applicationId = null, Guid? environmentId = null)
     {
         ValidatePage(offset, limit);
         List<T> values = [];
@@ -118,14 +123,28 @@ public sealed class PostgresAdminDirectoryStore(AdminPostgresDataSource adminDat
         int total;
         await using (NpgsqlCommand count = new(countSql, connection, transaction))
         {
-            count.Parameters.AddWithValue(tenantId);
+            if (filter is null) count.Parameters.AddWithValue(tenantId);
+            else AddInstallationFilters(count, tenantId, filter, applicationId, environmentId);
             total = Convert.ToInt32(await count.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false), System.Globalization.CultureInfo.InvariantCulture);
         }
         await using NpgsqlCommand command = new(sql, connection, transaction);
-        command.Parameters.AddWithValue(tenantId); command.Parameters.AddWithValue(offset); command.Parameters.AddWithValue(limit);
+        if (filter is null) { command.Parameters.AddWithValue(tenantId); command.Parameters.AddWithValue(offset); command.Parameters.AddWithValue(limit); }
+        else
+        {
+            AddInstallationFilters(command, tenantId, filter, applicationId, environmentId);
+            command.Parameters.AddWithValue("offset", offset); command.Parameters.AddWithValue("limit", limit);
+        }
         await using NpgsqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) values.Add(read(reader));
         return new(values, offset, limit, total);
+    }
+
+    private static void AddInstallationFilters(NpgsqlCommand command, Guid tenantId, string filter, Guid? applicationId, Guid? environmentId)
+    {
+        command.Parameters.AddWithValue("tenant", tenantId);
+        command.Parameters.AddWithValue("search", filter);
+        command.Parameters.AddWithValue("application", NpgsqlDbType.Uuid, (object?)applicationId ?? DBNull.Value);
+        command.Parameters.AddWithValue("environment", NpgsqlDbType.Uuid, (object?)environmentId ?? DBNull.Value);
     }
 
     private static async Task SetTenantAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, Guid tenantId, CancellationToken cancellationToken)

@@ -1,6 +1,14 @@
 import type { enTranslation } from './en';
 
 export const itTranslation = {
+  selectorSearch: 'Cerca {{label}}', selectorSearchNameCode: 'Nome o codice', selectorSearchId: 'ID installazione', selectorNoResults: 'Nessun risultato corrispondente',
+  guidedContinue: 'Vai alla prossima azione', guidedContextHelp: 'Cerca nel catalogo e seleziona un risultato. Applicazioni e ambienti sono cataloghi condivisi; le installazioni sono filtrate per il contesto selezionato.',
+  guidedRuntimeDirect: 'Apri la procedura di invocazione Direct', guidedRuntimeBroker: 'Apri la procedura di invocazione Broker',
+  guidedDirectPrepare: 'Usa l’applicazione Direct già registrata per questa installazione Active, con il suo certificato client e la chiave protetta. Il login Admin non è una credenziale runtime. L’applicazione deve considerare attendibile il certificato Gateway e avere il grant per l’operazione esatta.',
+  guidedDirectInvoke: 'Da tale applicazione invia una richiesta BGW1 firmata tramite mTLS a POST /v1/connectors/{connectorId}/operations/{operationId}:invoke, usando il contratto InvokeRequest supportato. Usa connettore/operazione autorizzati e un payload sintetico limitato; verifica la ConnectorVersion effettiva nel risultato. L’esempio DirectGatewayClient nel pacchetto di valutazione dimostra il protocollo: registra una nuova identità temporanea e non riutilizza la chiave di un’installazione esistente.',
+  guidedBrokerPrepare: 'Usa l’applicazione registrata sulla macchina che esegue il Local Broker associato a questa installazione Active. Il Broker deve avere l’accesso Gateway abilitato; l’esempio di protezione standalone con Gateway disabilitato non può eseguire questa chiamata.',
+  guidedBrokerInvoke: 'Tramite l’SDK .NET Broker installato chiama BrokerClient.InvokeGatewayAsync con ConnectorId, OperationId autorizzati e un payload sintetico limitato. Il Broker fornisce la propria identità Installation autenticata. Registra la ConnectorVersion restituita: la pubblicazione di una versione non dimostra che questa invocazione l’abbia usata.',
+  guidedInvocationVerify: 'Controlla il risultato applicativo limitato e il corrispondente evento Audit operation.invoke, contenente solo metadati. Registra versione effettiva del connettore ed esito. Non copiare credenziali, chiavi o risposte esterne grezze in Admin, log o evidenze. In caso di errore esamina il codice prima di decidere se riprovare è sicuro.',
   documentation: 'Documentazione', guideLanguage: 'Lingua della guida: inglese. Navigazione disponibile in inglese e italiano.', guideContents: 'Indice', guideOpenPage: 'Apri pagina: {{page}}', guideBackToContents: 'Torna all’indice',
   installationsDescription: 'Gestisci le identità delle installazioni e il loro accesso alle applicazioni.',
   installationsSelectTenantHelp: 'Scegli un tenant per visualizzare le sue installazioni. Applicazione e ambiente sono richiesti solo per creare un’installazione.',

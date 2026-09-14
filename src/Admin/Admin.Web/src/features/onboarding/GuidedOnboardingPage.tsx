@@ -11,6 +11,7 @@ import { ErrorState, LoadingState } from '../../components/AsyncState';
 import { PageTitle } from '../../components/PageTitle';
 import { PagedSelector } from '../../components/PagedSelector';
 import { InstallationKindSelector } from '../../components/InstallationKindSelector';
+import { useDirectorySearch } from './useDirectorySearch';
 
 interface DefinitionInfo {
   connectorId: string;
@@ -56,6 +57,12 @@ export function GuidedOnboardingPage() {
   const [installationOffset, setInstallationOffset] = useState(0);
   const [connectorOffset, setConnectorOffset] = useState(0);
   const [versionOffset, setVersionOffset] = useState(0);
+  const tenantSearch = useDirectorySearch();
+  const applicationSearch = useDirectorySearch();
+  const environmentSearch = useDirectorySearch();
+  const installationSearch = useDirectorySearch();
+  const connectorSearch = useDirectorySearch();
+  const versionSearch = useDirectorySearch();
   const [fileDefinition, setFileDefinition] = useState<object>();
   const [fileName, setFileName] = useState('');
   const [fileError, setFileError] = useState<Error>();
@@ -70,8 +77,13 @@ export function GuidedOnboardingPage() {
     }
     history.replace({ pathname: location.pathname, search: parameters.toString() });
   };
-  const selectTenant = (value: string) => { setTenantId(value); setInstallationId(''); replaceTarget({ tenant: value, installation: '' }); };
-  const selectEnvironment = (value: string) => { const application = selectedInstallation?.applicationId ?? applicationId; setApplicationId(application); setEnvironmentId(value); setInstallationId(''); replaceTarget({ application, environment: value, installation: '' }); };
+  const selectTenant = (value: string) => {
+    setTenantId(value); setApplicationId(''); setEnvironmentId(''); setInstallationId('');
+    setInstallationOffset(0); installationSearch.setText(''); setEndpointSelections({}); setResourceSelections({});
+    replaceTarget({ tenant: value, application: '', environment: '', installation: '' });
+  };
+  const resetInstallationChoices = () => { setInstallationId(''); setInstallationOffset(0); installationSearch.setText(''); setEndpointSelections({}); setResourceSelections({}); };
+  const selectEnvironment = (value: string) => { const application = selectedInstallation?.applicationId ?? applicationId; setApplicationId(application); setEnvironmentId(value); resetInstallationChoices(); replaceTarget({ application, environment: value, installation: '' }); };
   const selectInstallation = (value: string) => {
     setInstallationId(value);
     replaceTarget({ installation: value });
@@ -79,12 +91,12 @@ export function GuidedOnboardingPage() {
   const selectConnector = (value: string) => { setConnectorId(value); setVersion(''); setEndpointSelections({}); setResourceSelections({}); replaceTarget({ connector: value, version: '' }); };
   const selectVersion = (value: string) => { setVersion(value); setEndpointSelections({}); setResourceSelections({}); replaceTarget({ version: value }); };
 
-  const tenants = useQuery({ queryKey: ['tenants', 'guided', tenantOffset], queryFn: () => adminApi.tenants(tenantOffset) });
-  const applications = useQuery({ queryKey: ['applications', 'guided', applicationOffset], queryFn: () => adminApi.applications(applicationOffset) });
-  const environments = useQuery({ queryKey: ['environments', 'guided', environmentOffset], queryFn: () => adminApi.environments(environmentOffset) });
-  const installations = useQuery({ queryKey: ['installations', tenantId, 'guided', installationOffset], queryFn: () => adminApi.installations(tenantId, installationOffset), enabled: Boolean(tenantId), placeholderData: (previous, query) => query?.queryKey[1] === tenantId ? previous : undefined });
-  const connectors = useQuery({ queryKey: ['connectors', 'guided', connectorOffset], queryFn: () => adminApi.connectors(connectorOffset) });
-  const versions = useQuery({ queryKey: ['connector-versions', connectorId, 'guided', versionOffset], queryFn: () => adminApi.connectorVersions(connectorId, versionOffset), enabled: Boolean(connectorId), placeholderData: (previous, query) => query?.queryKey[1] === connectorId ? previous : undefined });
+  const tenants = useQuery({ queryKey: ['tenants', 'guided', tenantOffset, tenantSearch.filter], queryFn: () => adminApi.tenants(tenantOffset, 50, tenantSearch.filter), placeholderData: previous => previous });
+  const applications = useQuery({ queryKey: ['applications', 'guided', applicationOffset, applicationSearch.filter], queryFn: () => adminApi.applications(applicationOffset, 50, applicationSearch.filter), placeholderData: previous => previous });
+  const environments = useQuery({ queryKey: ['environments', 'guided', environmentOffset, environmentSearch.filter], queryFn: () => adminApi.environments(environmentOffset, 50, environmentSearch.filter), placeholderData: previous => previous });
+  const installations = useQuery({ queryKey: ['installations', tenantId, 'guided', installationOffset, installationSearch.filter, applicationId, environmentId], queryFn: () => adminApi.installations(tenantId, installationOffset, 50, installationSearch.filter, applicationId, environmentId), enabled: Boolean(tenantId), placeholderData: (previous, query) => query?.queryKey[1] === tenantId ? previous : undefined });
+  const connectors = useQuery({ queryKey: ['connectors', 'guided', connectorOffset, connectorSearch.filter], queryFn: () => adminApi.connectors(connectorOffset, 50, connectorSearch.filter), placeholderData: previous => previous });
+  const versions = useQuery({ queryKey: ['connector-versions', connectorId, 'guided', versionOffset, versionSearch.filter], queryFn: () => adminApi.connectorVersions(connectorId, versionOffset, 50, versionSearch.filter), enabled: Boolean(connectorId), placeholderData: (previous, query) => query?.queryKey[1] === connectorId ? previous : undefined });
   const uploadedInfo = definitionInfo(fileDefinition);
   const selectedVersionQuery = useQuery({ queryKey: ['connector-version', connectorId, version], queryFn: async () => {
     try { return await adminApi.connectorVersion(connectorId, version); }
@@ -97,6 +109,10 @@ export function GuidedOnboardingPage() {
   const currentVersion = selectedVersionQuery.data;
   const selectedInstallation = selectedInstallationQuery.data;
   const effectiveEnvironmentId = selectedInstallation?.environmentId ?? (installationId ? '' : environmentId);
+  const effectiveApplicationId = selectedInstallation?.applicationId ?? (installationId ? '' : applicationId);
+  const selectedTenant = useQuery({ queryKey: ['tenant', tenantId], queryFn: () => adminApi.tenant(tenantId), enabled: Boolean(tenantId) });
+  const selectedApplication = useQuery({ queryKey: ['application', effectiveApplicationId], queryFn: () => adminApi.application(effectiveApplicationId), enabled: Boolean(effectiveApplicationId) });
+  const selectedEnvironment = useQuery({ queryKey: ['environment', effectiveEnvironmentId], queryFn: () => adminApi.environments(0, 1, effectiveEnvironmentId), enabled: Boolean(effectiveEnvironmentId) });
   const storedDefinition = useQuery({ queryKey: ['connector-definition', connectorId, version, 'guided'], queryFn: () => adminApi.connectorDefinition(connectorId, version), enabled: Boolean(connectorId && version && currentVersion) });
   const info = definitionInfo(storedDefinition.data ?? fileDefinition);
   const bindings = useQuery({ queryKey: ['bindings', connectorId, version, effectiveEnvironmentId, 'guided'], queryFn: () => adminApi.bindings(connectorId, version, effectiveEnvironmentId), enabled: Boolean(connectorId && version && effectiveEnvironmentId && currentVersion) });
@@ -209,39 +225,44 @@ export function GuidedOnboardingPage() {
   else if (selectedInstallation?.status === 'Active' && currentVersion?.state === 'Validated' && bindingExists && missingGrants.length === 0 && !requestedApproval && !approvedApproval) { stateKey = 'guidedStateApprovalRequest'; roleKey = 'roleConnectorEditor'; actionKey = 'guidedActionRequestApproval'; prerequisiteKey = 'guidedPrerequisiteApprovalRequest'; }
   else if (selectedInstallation?.status === 'Active' && currentVersion?.state === 'Validated' && (requestedApproval || approvedApproval)) { stateKey = 'guidedStateApprovalPublish'; roleKey = 'roleConnectorApprover'; actionKey = 'guidedActionApprovePublish'; prerequisiteKey = 'guidedPrerequisiteApprovalPublish'; }
   else if (isReady) { stateKey = 'guidedStateComplete'; roleKey = 'guidedRoleNone'; actionKey = 'guidedActionComplete'; prerequisiteKey = 'guidedPrerequisiteNone'; }
+  const actionRole = roleKey === 'roleSecurityAdministrator' ? 'SecurityAdministrator' : roleKey === 'roleConnectorEditor' ? 'ConnectorEditor' : 'ConnectorApprover';
+  const canContinue = !isReady && actionKey !== 'guidedActionEnrollmentHandoff' && (actionKey !== 'guidedActionCreateInstallation' || !installationId) && hasRole(session, actionRole);
 
   if (tenants.isPending || applications.isPending || environments.isPending || connectors.isPending) return <LoadingState />;
-  const loadError = tenants.error ?? applications.error ?? environments.error ?? connectors.error ?? installations.error ?? versions.error ?? selectedVersionQuery.error ?? selectedInstallationQuery.error ?? storedDefinition.error ?? bindings.error ?? grants.error ?? approvals.error ?? endpointResources.error ?? providerResources.error ?? review.error;
+  const loadError = tenants.error ?? applications.error ?? environments.error ?? connectors.error ?? installations.error ?? versions.error ?? selectedTenant.error ?? selectedApplication.error ?? selectedEnvironment.error ?? selectedVersionQuery.error ?? selectedInstallationQuery.error ?? storedDefinition.error ?? bindings.error ?? grants.error ?? approvals.error ?? endpointResources.error ?? providerResources.error ?? review.error;
   if (loadError && !mutationError) return <ErrorState error={loadError} />;
 
-  return <>
+  return <Box sx={{ maxWidth: 960, mx: 'auto' }}>
     <PageTitle title={t('guidedOnboarding')} />
     <Card><CardContent>
-      <Typography variant="h2">{t('guidedCurrentState')}</Typography>
+      <Typography variant="overline">{t('guidedNextAction')}</Typography>
+      <Typography variant="h2" sx={{ fontSize: '1.5rem', mt: 0.5 }}>{t(actionKey)}</Typography>
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
         <Chip label={`${t('status')}: ${t(stateKey)}`} variant={isPublished ? 'outlined' : 'filled'} />
-        <Chip label={`${t('guidedMissingPrerequisite')}: ${t(prerequisiteKey)}`} />
-        <Chip label={`${t('guidedRequiredRole')}: ${t(roleKey)}`} />
+        {!isReady && <Chip label={`${t('guidedRequiredRole')}: ${t(roleKey)}`} color="primary" variant="outlined" />}
       </Stack>
-      <Typography sx={{ mt: 2 }}><strong>{t('guidedNextAction')}:</strong> {t(actionKey)}</Typography>
-      <Alert severity="info" sx={{ mt: 2 }}>{t('guidedResumeSafe')}</Alert>
+      {!isReady && <Typography sx={{ mt: 2 }}>{t(prerequisiteKey)}</Typography>}
+      {canContinue && <Button variant="contained" href="#guided-current-action" sx={{ mt: 2 }}>{t('guidedContinue')}</Button>}
+      {isReady && <><Alert severity="success" sx={{ mt: 2 }} role="status">{t('guidedPublishedActive')}</Alert><Button variant="contained" href={`./documentation#invoke-${selectedInstallation?.installationKind === 'Broker' ? 'broker' : 'direct'}`} sx={{ mt: 2 }}>{t(selectedInstallation?.installationKind === 'Broker' ? 'guidedRuntimeBroker' : 'guidedRuntimeDirect')}</Button></>}
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>{t('guidedResumeSafe')}</Typography>
     </CardContent></Card>
 
     <Card sx={{ mt: 3 }}><CardContent>
       <Typography variant="h2" sx={{ mb: 2 }}>{t('guidedTarget')}</Typography>
-      <Stack spacing={2}>
-        <PagedSelector id="guided-tenant" label={t('selectTenant')} value={tenantId} page={tenants.data!} onChange={selectTenant} onOffset={setTenantOffset} itemLabel={item => item.displayName} />
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <PagedSelector id="guided-application" label={t('application')} value={selectedInstallation?.applicationId ?? applicationId} page={applications.data!} onChange={value => { setApplicationId(value); setEnvironmentId(effectiveEnvironmentId); setInstallationId(''); replaceTarget({ application: value, environment: effectiveEnvironmentId, installation: '' }); }} onOffset={setApplicationOffset} itemLabel={item => item.displayName} />
-          <PagedSelector id="guided-environment" label={t('environment')} value={effectiveEnvironmentId} page={environments.data!} onChange={selectEnvironment} onOffset={setEnvironmentOffset} itemLabel={item => item.displayName} />
-        </Stack>
-        {tenantId && installations.data && <PagedSelector id="guided-installation" label={t('installation')} value={installationId} page={installations.data} selectedItem={selectedInstallation} onChange={selectInstallation} onOffset={setInstallationOffset} itemLabel={item => `${item.installationKind} · ${item.status} · ${formatDate(item.createdAt)}`} />}
-        <PagedSelector id="guided-connector" label={t('connector')} value={connectorId} page={connectors.data!} onChange={selectConnector} onOffset={setConnectorOffset} itemLabel={item => item.displayName} itemValue={item => item.connectorId} />
-        {connectorId && versions.data && <PagedSelector id="guided-version" label={t('version')} value={version} page={versions.data} selectedItem={currentVersion ?? undefined} onChange={selectVersion} onOffset={setVersionOffset} itemLabel={item => `${item.version} · ${item.state}`} itemValue={item => item.version} />}
-      </Stack>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t('guidedContextHelp')}</Typography>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' }, gap: 2 }}>
+        <PagedSelector id="guided-tenant" busy={tenants.isPlaceholderData || tenantSearch.text.trim() !== tenantSearch.filter} search={{ value: tenantSearch.text, onChange: value => { tenantSearch.setText(value); setTenantOffset(0); }, hint: t('selectorSearchNameCode') }} label={t('selectTenant')} value={tenantId} page={tenants.data!} selectedItem={selectedTenant.data} onChange={selectTenant} onOffset={setTenantOffset} itemLabel={item => `${item.displayName} · ${item.code}`} />
+        <Box sx={{ display: 'contents' }}>
+          <PagedSelector id="guided-application" busy={applications.isPlaceholderData || applicationSearch.text.trim() !== applicationSearch.filter} search={{ value: applicationSearch.text, onChange: value => { applicationSearch.setText(value); setApplicationOffset(0); }, hint: t('selectorSearchNameCode') }} label={t('application')} value={effectiveApplicationId} page={applications.data!} selectedItem={selectedApplication.data} onChange={value => { setApplicationId(value); setEnvironmentId(effectiveEnvironmentId); resetInstallationChoices(); replaceTarget({ application: value, environment: effectiveEnvironmentId, installation: '' }); }} onOffset={setApplicationOffset} itemLabel={item => `${item.displayName} · ${item.code}`} />
+          <PagedSelector id="guided-environment" busy={environments.isPlaceholderData || environmentSearch.text.trim() !== environmentSearch.filter} search={{ value: environmentSearch.text, onChange: value => { environmentSearch.setText(value); setEnvironmentOffset(0); }, hint: t('selectorSearchNameCode') }} label={t('environment')} value={effectiveEnvironmentId} page={environments.data!} selectedItem={selectedEnvironment.data?.items.find(item => item.id === effectiveEnvironmentId)} onChange={selectEnvironment} onOffset={setEnvironmentOffset} itemLabel={item => `${item.displayName} · ${item.code}`} />
+        </Box>
+        {tenantId && installations.data && <PagedSelector id="guided-installation" busy={installations.isPlaceholderData || installationSearch.text.trim() !== installationSearch.filter} search={{ value: installationSearch.text, onChange: value => { installationSearch.setText(value); setInstallationOffset(0); }, hint: t('selectorSearchId') }} label={t('installation')} value={installationId} page={installations.data} selectedItem={selectedInstallation} onChange={selectInstallation} onOffset={setInstallationOffset} itemLabel={item => `${item.installationKind} · ${item.status} · ${formatDate(item.createdAt)} · ${item.id}`} />}
+        <PagedSelector id="guided-connector" busy={connectors.isPlaceholderData || connectorSearch.text.trim() !== connectorSearch.filter} search={{ value: connectorSearch.text, onChange: value => { connectorSearch.setText(value); setConnectorOffset(0); }, hint: t('selectorSearchNameCode') }} label={t('connector')} value={connectorId} page={connectors.data!} onChange={selectConnector} onOffset={setConnectorOffset} itemLabel={item => `${item.displayName} · ${item.connectorId}`} itemValue={item => item.connectorId} />
+        {connectorId && versions.data && <PagedSelector id="guided-version" busy={versions.isPlaceholderData || versionSearch.text.trim() !== versionSearch.filter} search={{ value: versionSearch.text, onChange: value => { versionSearch.setText(value); setVersionOffset(0); }, hint: t('selectorSearchNameCode') }} label={t('version')} value={version} page={versions.data} selectedItem={currentVersion ?? undefined} onChange={selectVersion} onOffset={setVersionOffset} itemLabel={item => `${item.version} · ${item.state}`} itemValue={item => item.version} />}
+      </Box>
     </CardContent></Card>
 
-    {hasRole(session, 'SecurityAdministrator') && <Card sx={{ mt: 3 }}><CardContent>
+    {hasRole(session, 'SecurityAdministrator') && !installationId && <Card id={actionKey === 'guidedActionCreateInstallation' ? 'guided-current-action' : undefined} tabIndex={-1} sx={{ mt: 3 }}><CardContent>
       <Typography variant="h2">1. {t('guidedActionCreateInstallation')}</Typography>
       <Typography color="text.secondary" sx={{ my: 1 }}>{t('guidedCreateInstallationHelp')}</Typography>
       {(!installationId || selectedInstallation) && <Box sx={{ maxWidth: 480, my: 2 }}>
@@ -250,7 +271,7 @@ export function GuidedOnboardingPage() {
       <Button variant="contained" disabled={!tenantId || !applicationId || !environmentId || Boolean(installationId) || createInstallation.isPending} onClick={() => createInstallation.mutate()}>{t('createInstallation')}</Button>
     </CardContent></Card>}
 
-    {hasRole(session, 'ConnectorEditor') && <Card sx={{ mt: 3 }}><CardContent>
+    {hasRole(session, 'ConnectorEditor') && (!currentVersion || currentVersion.state === 'Draft') && <Card id={actionKey === 'guidedActionDefinition' ? 'guided-current-action' : undefined} tabIndex={-1} sx={{ mt: 3 }}><CardContent>
       <Typography variant="h2">2. {t('guidedActionDefinition')}</Typography>
       <Typography color="text.secondary" sx={{ my: 1 }}>{t('guidedDefinitionHelp')}</Typography>
       <Button component="label" variant="outlined">{t('guidedSelectDefinitionFile')}<input hidden type="file" accept="application/json,.json" aria-label={t('guidedDefinitionFile')} onChange={async event => {
@@ -265,7 +286,7 @@ export function GuidedOnboardingPage() {
       <Typography color="text.secondary" sx={{ mt: 1 }}>{t('guidedAdvancedEditorHelp')}</Typography>
     </CardContent></Card>}
 
-    {hasRole(session, 'SecurityAdministrator') && currentVersion?.state === 'Validated' && info && <Card sx={{ mt: 3 }}><CardContent>
+    {hasRole(session, 'SecurityAdministrator') && currentVersion?.state === 'Validated' && info && (!bindingExists || missingGrants.length > 0) && <Card id={actionKey === 'guidedActionBindingGrant' ? 'guided-current-action' : undefined} tabIndex={-1} sx={{ mt: 3 }}><CardContent>
       <Typography variant="h2">3. {t('guidedActionBindingGrant')}</Typography>
       {!bindingExists && <Stack spacing={2} sx={{ my: 2 }}>
         {info.endpointBindings.map(logical => { const candidates = endpointCandidates(logical); const value = selectedId(endpointSelections, logical, candidates.map(item => item.endpointId)); return <FormControl key={logical} fullWidth><InputLabel id={`endpoint-${logical}`}>{t('endpoint')}: {logical}</InputLabel><Select labelId={`endpoint-${logical}`} label={`${t('endpoint')}: ${logical}`} value={value} onChange={event => setEndpointSelections(current => ({ ...current, [logical]: event.target.value }))}>{candidates.map(item => <MenuItem key={item.endpointId} value={item.endpointId}>{item.displayName} · {item.endpoint}</MenuItem>)}</Select></FormControl>; })}
@@ -275,19 +296,18 @@ export function GuidedOnboardingPage() {
       <Button variant="contained" disabled={!selectedInstallation || selectedInstallation.status !== 'Active' || (!bindingExists && !selectionsComplete) || configure.isPending} onClick={() => configure.mutate()}>{t('guidedConfigureBindingGrant')}</Button>
     </CardContent></Card>}
 
-    {hasRole(session, 'ConnectorEditor') && currentVersion?.state === 'Validated' && bindingExists && missingGrants.length === 0 && <Card sx={{ mt: 3 }}><CardContent>
+    {hasRole(session, 'ConnectorEditor') && currentVersion?.state === 'Validated' && bindingExists && missingGrants.length === 0 && !requestedApproval && !approvedApproval && <Card id={actionKey === 'guidedActionRequestApproval' ? 'guided-current-action' : undefined} tabIndex={-1} sx={{ mt: 3 }}><CardContent>
       <Typography variant="h2">4. {t('guidedActionRequestApproval')}</Typography>
       <Button variant="contained" disabled={Boolean(requestedApproval || approvedApproval) || requestApproval.isPending} onClick={() => requestApproval.mutate()}>{t('requestApproval')}</Button>
     </CardContent></Card>}
 
-    {hasRole(session, 'ConnectorApprover') && currentVersion?.state === 'Validated' && (requestedApproval || approvedApproval) && <Card sx={{ mt: 3 }}><CardContent>
+    {hasRole(session, 'ConnectorApprover') && currentVersion?.state === 'Validated' && (requestedApproval || approvedApproval) && <Card id={actionKey === 'guidedActionApprovePublish' ? 'guided-current-action' : undefined} tabIndex={-1} sx={{ mt: 3 }}><CardContent>
       <Typography variant="h2">5. {t('guidedActionApprovePublish')}</Typography>
       {review.data && <Box component="section" aria-label={t('guidedApprovalReview')} sx={{ my: 2 }}><Typography><strong>{t('connector')}:</strong> {review.data.artifact.connector.displayName} · {review.data.artifact.connector.version}</Typography><Typography><strong>{t('publicationDigest')}:</strong> <code>{review.data.digestSha256}</code></Typography>{review.data.artifact.operations.map(operation => <Typography key={`${operation.environment}-${operation.operationId}`}><strong>{operation.operationId}:</strong> {operation.endpoint.scheme}://{operation.endpoint.hostname}:{operation.endpoint.port}{operation.endpoint.path}</Typography>)}</Box>}
       <Button variant="contained" disabled={(!approvedApproval && !review.data) || approveAndPublish.isPending} onClick={() => approveAndPublish.mutate()}>{t('guidedVerifyApprovePublish')}</Button>
     </CardContent></Card>}
 
-    {isReady && <Alert severity="success" sx={{ mt: 3 }} role="status">{t('guidedPublishedActive')}</Alert>}
     {mutationError && <Box sx={{ mt: 2 }}><ErrorState error={mutationError} /></Box>}
     <ActivationHandoffDialog activation={activation} onClose={() => setActivation(undefined)} />
-  </>;
+  </Box>;
 }

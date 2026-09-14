@@ -17,6 +17,15 @@
 
 ## Actors and trust levels
 
+Admin directory search uses the existing authenticated list endpoints and role scopes:
+global Tenant/Application/Environment catalogs retain global read authorization;
+Installation search requires the authorized tenant and keeps transaction-local RLS.
+Application/environment filters only narrow that scope. Filters are bounded to 100
+characters, parameterized as literal text, and results retain the 100-record API
+maximum (50 in onboarding). Browser query keys include search and dependent context;
+selection remains an immutable identifier and never becomes authorization. These
+controls do not claim indexed constant-time search or platform capacity qualification.
+
 - Legitimate Operator.
 - Authorized legacy Application, considered potentially vulnerable.
 - Unauthorized local process/same-user malware.

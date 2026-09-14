@@ -249,8 +249,8 @@ test('FULLSTACK-02 guided onboarding reaches one real invocation in five resumab
     if (response.status() === 401) unauthorizedResponseCount++;
   });
   const choose = async (page: Page, label: string, option: string) => {
-    await page.getByLabel(label).click();
-    await page.getByRole('option', { name: option, exact: true }).click();
+    await page.getByRole('combobox', { name: label, exact: true }).click();
+    await page.getByRole('option', { name: option, exact: false }).click();
   };
 
   await security.goto('./onboarding');

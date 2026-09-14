@@ -115,13 +115,45 @@ test('UI-MOCK-37 safe failure diagnostics are SecurityAdministrator-only bounded
 test('UI-MOCK-38 guided onboarding starts from readable selectors and exposes only the current role action', async ({ page }) => {
   await page.getByRole('link', { name: 'Guided onboarding' }).click();
   await expect(page.getByRole('heading', { name: 'Guided onboarding' })).toBeVisible();
-  await page.getByLabel('Select a tenant').click(); await page.getByRole('option', { name: 'Sample tenant' }).click();
-  await page.getByLabel('Application').click(); await page.getByRole('option', { name: 'Sample application' }).click();
-  await page.getByLabel('Environment').click(); await page.getByRole('option', { name: 'Local' }).click();
+  await page.getByRole('combobox', { name: 'Select a tenant', exact: true }).click(); await page.getByRole('option', { name: 'Sample tenant' }).click();
+  await page.getByRole('combobox', { name: 'Application', exact: true }).click(); await page.getByRole('option', { name: 'Sample application' }).click();
+  await page.getByRole('combobox', { name: 'Environment', exact: true }).click(); await page.getByRole('option', { name: 'Local' }).click();
   await expect(page.getByRole('button', { name: 'Create installation' })).toBeEnabled();
+  await page.getByRole('link', { name: 'Go to the next action' }).click();
+  await expect(page.locator('#guided-current-action')).toBeFocused();
   await expect(page.getByRole('heading', { name: /^2\./ })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: /^4\./ })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: /^5\./ })).toHaveCount(0);
+  const axe = await new AxeBuilder({ page }).analyze();
+  expect(axe.violations.filter(value => ['critical', 'serious'].includes(value.impact ?? ''))).toEqual([]);
+});
+
+test('UI-MOCK-46 guided server search is bounded and keyboard usable in a narrow viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const remote = { ...tenant, id: '10000000-0000-0000-0000-000000009999', code: 'remote-9999', displayName: 'Remote tenant' };
+  const requests: URL[] = [];
+  await page.route('**/admin/api/v1/tenants?*', route => {
+    const url = new URL(route.request().url()); requests.push(url);
+    const searching = url.searchParams.get('filter') === 'remote';
+    return route.fulfill({ json: { items: searching ? [remote] : [tenant], offset: 0, limit: 50, total: searching ? 1 : 10000 } });
+  });
+  await page.route(`**/admin/api/v1/tenants/${remote.id}`, route => route.fulfill({ json: remote }));
+  await page.goto('./onboarding');
+  const search = page.getByRole('searchbox', { name: 'Search Select a tenant', exact: true });
+  await search.fill('remote');
+  const selector = page.getByRole('combobox', { name: 'Select a tenant', exact: true });
+  await expect.poll(() => requests.some(url => url.searchParams.get('filter') === 'remote')).toBe(true);
+  await expect(selector).toBeEnabled();
+  await search.press('Tab');
+  await expect(selector).toBeFocused();
+  await selector.press('ArrowDown');
+  await expect(page.getByRole('option', { name: 'Remote tenant · remote-9999' })).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(selector).toContainText('Remote tenant · remote-9999');
+  await page.reload();
+  await expect(selector).toContainText('Remote tenant · remote-9999');
+  expect(requests.every(url => Number(url.searchParams.get('limit')) <= 50)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   const axe = await new AxeBuilder({ page }).analyze();
   expect(axe.violations.filter(value => ['critical', 'serious'].includes(value.impact ?? ''))).toEqual([]);
 });
@@ -133,9 +165,9 @@ for (const screen of ['Installations', 'Guided onboarding']) {
       const selector = page.getByRole('combobox', { name: 'Installation type', exact: true });
       await expect(selector).toHaveText('Direct');
       await expect(selector).toHaveAccessibleDescription('Application → Gateway. Default for the Core pilot; no Local Broker required.');
-      await page.getByLabel('Select a tenant').click(); await page.getByRole('option', { name: 'Sample tenant' }).click();
+      await page.getByRole('combobox', { name: 'Select a tenant', exact: true }).click(); await page.getByRole('option', { name: 'Sample tenant' }).click();
       await page.getByLabel('Application', { exact: true }).click(); await page.getByRole('option', { name: 'Sample application' }).click();
-      await page.getByLabel('Environment', { exact: true }).click(); await page.getByRole('option', { name: 'Local', exact: true }).click();
+      await page.getByLabel('Environment', { exact: true }).click(); await page.getByRole('option', { name: /^Local(?: ·|$)/ }).click();
       if (kind === 'Broker') {
         await selector.click(); await page.getByRole('option', { name: 'Broker', exact: true }).click();
         await expect(selector).toHaveAccessibleDescription('Application → Windows Local Broker → Gateway. Install and enroll the Broker outside this page.');
@@ -153,9 +185,9 @@ for (const screen of ['Installations', 'Guided onboarding']) {
       await expect(page.getByRole('textbox', { name: 'Activation code ID', exact: true })).toBeVisible();
       await page.getByRole('button', { name: 'Close', exact: true }).click();
       if (screen === 'Guided onboarding') {
-        await expect(selector).toHaveText(kind);
-        await expect(selector).toBeDisabled();
-        await expect(page.getByRole('button', { name: 'Create installation', exact: true })).toBeDisabled();
+        await expect(page.getByRole('combobox', { name: 'Installation', exact: true })).toContainText(kind);
+        await expect(selector).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Create installation', exact: true })).toHaveCount(0);
       }
     });
   }
@@ -178,15 +210,34 @@ test('UI-MOCK-45 guided resume keeps the existing server-owned Broker kind after
   let mutations = 0;
   page.on('request', request => { if (request.method() === 'POST') mutations++; });
   await page.goto(`./onboarding?tenant=${tenant.id}&installation=${installationId}&installationKind=Direct`);
-  const selector = page.getByRole('combobox', { name: 'Installation type', exact: true });
-  await expect(selector).toHaveText('Broker');
-  await expect(selector).toBeDisabled();
+  const selector = page.getByRole('combobox', { name: 'Installation', exact: true });
+  await expect(selector).toContainText('Broker');
+
   await page.reload();
-  await expect(selector).toHaveText('Broker');
-  await expect(selector).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Create installation', exact: true })).toBeDisabled();
+  await expect(selector).toContainText('Broker');
+
+  await expect(page.getByRole('button', { name: 'Create installation', exact: true })).toHaveCount(0);
   expect(mutations).toBe(0);
 });
+
+for (const kind of ['Direct', 'Broker']) {
+  test(`UI-MOCK-47 ready ${kind} target links to its invocation procedure without obsolete actions`, async ({ page }) => {
+    const installationId = '40000000-0000-0000-0000-000000000001';
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route(`**/admin/api/v1/installations/${installationId}?*`, route => route.fulfill({ json: {
+      id: installationId, tenantId: tenant.id, applicationId: '30000000-0000-0000-0000-000000000001',
+      environmentId: '50000000-0000-0000-0000-000000000001', installationKind: kind, status: 'Active', createdAt: '2026-09-14T23:30:00-02:00'
+    } }));
+    await page.goto(`./onboarding?tenant=${tenant.id}&installation=${installationId}&connector=sample-secure-service&version=2.0.0`);
+    await expect(page.getByRole('combobox', { name: 'Installation', exact: true })).toContainText(`${kind} · Active · 15 Sep 2026`);
+    await expect(page.getByRole('button', { name: 'Create installation', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Validate and import', exact: true })).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    await page.getByRole('link', { name: `Open the ${kind} invocation procedure`, exact: true }).click();
+    await expect(page.locator(`#invoke-${kind.toLowerCase()}`)).toBeFocused();
+    await expect(page.getByRole('heading', { name: 'Documentation', exact: true })).toBeAttached();
+  });
+}
 
 for (const viewport of [{ width: 1440, height: 1000 }, { width: 1024, height: 900 }, { width: 390, height: 844 }]) {
   test(`UI-MOCK-41 installation controls and table stay within the ${viewport.width}px viewport`, async ({ page }, testInfo) => {

@@ -1861,6 +1861,8 @@ export interface components {
         TenantId: string;
         Offset: number;
         Limit: number;
+        /** @description Literal case-insensitive substring of name or code or exact UUID; surrounding whitespace is ignored */
+        DirectoryFilter: string;
         Filter: string;
         /** @description Opaque token obtained from /admin/auth/csrf. */
         Csrf: string;
@@ -2507,6 +2509,8 @@ export interface operations {
             query?: {
                 offset?: components["parameters"]["Offset"];
                 limit?: components["parameters"]["Limit"];
+                /** @description Literal case-insensitive substring of name or code or exact UUID; surrounding whitespace is ignored */
+                filter?: components["parameters"]["DirectoryFilter"];
             };
             header?: never;
             path?: never;
@@ -2647,6 +2651,8 @@ export interface operations {
             query?: {
                 offset?: components["parameters"]["Offset"];
                 limit?: components["parameters"]["Limit"];
+                /** @description Literal case-insensitive substring of name or code or exact UUID; surrounding whitespace is ignored */
+                filter?: components["parameters"]["DirectoryFilter"];
             };
             header?: never;
             path?: never;
@@ -2782,7 +2788,12 @@ export interface operations {
     };
     listEnvironments: {
         parameters: {
-            query?: never;
+            query?: {
+                offset?: components["parameters"]["Offset"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Literal case-insensitive substring of name or code or exact UUID; surrounding whitespace is ignored */
+                filter?: components["parameters"]["DirectoryFilter"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2807,6 +2818,10 @@ export interface operations {
                 tenantId: components["parameters"]["TenantId"];
                 offset?: components["parameters"]["Offset"];
                 limit?: components["parameters"]["Limit"];
+                /** @description Literal case-insensitive Installation UUID substring */
+                filter?: string;
+                applicationId?: string;
+                environmentId?: string;
             };
             header?: never;
             path?: never;

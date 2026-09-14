@@ -907,8 +907,14 @@ public sealed class PostgresIsolationTests
 
             Assert.Equal(101, createdTenantIds.Count);
             Assert.Equal(101, createdApplicationIds.Count);
-            await AssertOwnedPaginationAsync(directory.ListTenantsAsync, record => record.Id, tenantIds, foreignTenantId, TestContext.Current.CancellationToken);
-            await AssertOwnedPaginationAsync(directory.ListApplicationsAsync, record => record.Id, applicationIds, foreignApplicationId, TestContext.Current.CancellationToken);
+            await AssertOwnedPaginationAsync<TenantRecord>((offset, limit, token) => directory.ListTenantsAsync(offset, limit, token), record => record.Id, tenantIds, foreignTenantId, TestContext.Current.CancellationToken);
+            await AssertOwnedPaginationAsync<ApplicationRecord>((offset, limit, token) => directory.ListApplicationsAsync(offset, limit, token), record => record.Id, applicationIds, foreignApplicationId, TestContext.Current.CancellationToken);
+            AdminPage<TenantRecord> searchedTenant = await directory.ListTenantsAsync(0, 1, TestContext.Current.CancellationToken, $"{prefix}-t-100".ToUpperInvariant());
+            Assert.Equal(tenantIds[100], Assert.Single(searchedTenant.Items).Id);
+            Assert.Equal(1, searchedTenant.Total);
+            Assert.Empty((await directory.ListTenantsAsync(0, 20, TestContext.Current.CancellationToken, "%_' OR 1=1 --")).Items);
+            AdminPage<ApplicationRecord> searchedApplication = await directory.ListApplicationsAsync(0, 1, TestContext.Current.CancellationToken, $"{prefix}-a-100");
+            Assert.Equal(applicationIds[100], Assert.Single(searchedApplication.Items).Id);
 
             await ExecuteNonQueryAsync(migrationConnectionString, "DELETE FROM gateway.tenant WHERE id=ANY($1)", TestContext.Current.CancellationToken, createdTenantIds.ToArray());
             createdTenantIds.Clear();
@@ -1820,6 +1826,37 @@ public sealed class PostgresIsolationTests
         await using NpgsqlCommand setTenant = new("SELECT set_config('app.tenant_id',$1,true)", owner, transaction);
         setTenant.Parameters.AddWithValue(tenantId.ToString("D"));
         await setTenant.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task M5_IT_DAT_PostgreSQL18_installation_search_preserves_tenant_and_context_filters()
+    {
+        string? adminConnection = Environment.GetEnvironmentVariable("GATEWAY_POSTGRES_ADMIN_CONNECTION");
+        string? migrationConnection = Environment.GetEnvironmentVariable("GATEWAY_POSTGRES_MIGRATION_CONNECTION");
+        if (string.IsNullOrWhiteSpace(adminConnection) || string.IsNullOrWhiteSpace(migrationConnection))
+            Assert.Skip("The dedicated PostgreSQL gate must provide admin and migration connections.");
+        await ApplyMigrationAsync();
+        await using NpgsqlConnection owner = new(migrationConnection);
+        await owner.OpenAsync(TestContext.Current.CancellationToken);
+        EventPrivilegeFixture fixture = await CreateEventPrivilegeFixtureAsync(owner);
+        try
+        {
+            await using AdminPostgresDataSource pool = new(adminConnection);
+            PostgresAdminDirectoryStore directory = new(pool);
+            AdminPage<InstallationRecord> result = await directory.ListInstallationsAsync(fixture.TenantA, 0, 1,
+                TestContext.Current.CancellationToken, fixture.InstallationA.ToString("D").ToUpperInvariant(), fixture.ApplicationId, fixture.EnvironmentId);
+            Assert.Equal(fixture.InstallationA, Assert.Single(result.Items).Id);
+            Assert.Equal(1, result.Total);
+            Assert.Empty((await directory.ListInstallationsAsync(fixture.TenantA, 0, 1,
+                TestContext.Current.CancellationToken, fixture.InstallationB.ToString("D"))).Items);
+            Assert.Empty((await directory.ListInstallationsAsync(fixture.TenantA, 0, 1,
+                TestContext.Current.CancellationToken, "", Guid.NewGuid(), fixture.EnvironmentId)).Items);
+            Assert.Empty((await directory.ListInstallationsAsync(fixture.TenantA, 0, 1,
+                TestContext.Current.CancellationToken, "", fixture.ApplicationId, Guid.NewGuid())).Items);
+            Assert.Equal(fixture.EnvironmentId, Assert.Single((await directory.ListEnvironmentsAsync(0, 1,
+                TestContext.Current.CancellationToken, fixture.EnvironmentId.ToString("D"))).Items).Id);
+        }
+        finally { await CleanupEventPrivilegeFixtureAsync(owner, fixture); }
     }
 
     private static async Task<EventPrivilegeFixture> CreateEventPrivilegeFixtureAsync(NpgsqlConnection owner)

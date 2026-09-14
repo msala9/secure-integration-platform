@@ -625,6 +625,18 @@ public sealed class AdminApiSecurityTests
             using HttpResponseMessage found = await scoped.GetAsync(route, TestContext.Current.CancellationToken);
             bool allowed = role is AdminRole.Viewer or AdminRole.Operator or AdminRole.SecurityAdministrator;
             Assert.Equal(allowed ? HttpStatusCode.OK : HttpStatusCode.Forbidden, found.StatusCode);
+            using HttpResponseMessage searched = await scoped.GetAsync($"/admin/api/v1/installations?tenantId={tenantId:D}&filter={installationId:D}&applicationId={applicationId:D}&environmentId={environmentId:D}&limit=1", TestContext.Current.CancellationToken);
+            Assert.Equal(allowed ? HttpStatusCode.OK : HttpStatusCode.Forbidden, searched.StatusCode);
+            using HttpResponseMessage foreignSearch = await scoped.GetAsync($"/admin/api/v1/installations?tenantId={otherTenant:D}&filter={foreignInstallationId:D}", TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Forbidden, foreignSearch.StatusCode);
+            using HttpResponseMessage globalSearch = await scoped.GetAsync("/admin/api/v1/tenants?filter=lookup&limit=1", TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Forbidden, globalSearch.StatusCode);
+            if (allowed)
+            {
+                using JsonDocument searchBody = JsonDocument.Parse(await searched.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+                Assert.Equal(1, searchBody.RootElement.GetProperty("total").GetInt32());
+                Assert.Equal(installationId, searchBody.RootElement.GetProperty("items")[0].GetProperty("id").GetGuid());
+            }
             using HttpResponseMessage export = await scoped.GetAsync($"/admin/api/v1/audit:export?tenantId={tenantId:D}&{exportInterval}", TestContext.Current.CancellationToken);
             Assert.Equal(allowed ? HttpStatusCode.OK : HttpStatusCode.Forbidden, export.StatusCode);
             using HttpResponseMessage foreignExport = await scoped.GetAsync($"/admin/api/v1/audit:export?tenantId={otherTenant:D}&{exportInterval}", TestContext.Current.CancellationToken);

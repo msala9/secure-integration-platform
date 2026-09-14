@@ -23,6 +23,15 @@ export function DocumentationPage() {
 
   return <Box id="admin-guide" sx={{ maxWidth: 1200, overflowWrap: 'anywhere', '& [id]': { scrollMarginTop: '7rem' } }}>
     <PageTitle title={t('documentation')} description={t('guideLanguage')} />
+    {(['direct', 'broker'] as const).map(kind => <Paper key={kind} component="section" variant="outlined" sx={{ p: 3, mb: 3 }} aria-labelledby={`invoke-${kind}`}>
+      <Typography variant="h2" id={`invoke-${kind}`} tabIndex={-1}>{t(kind === 'direct' ? 'guidedRuntimeDirect' : 'guidedRuntimeBroker')}</Typography>
+      <Box component="ol" sx={{ pl: 3 }}>
+        <li><Typography>{t(kind === 'direct' ? 'guidedDirectPrepare' : 'guidedBrokerPrepare')}</Typography></li>
+        <li><Typography>{t(kind === 'direct' ? 'guidedDirectInvoke' : 'guidedBrokerInvoke')}</Typography></li>
+        <li><Typography>{t('guidedInvocationVerify')}</Typography></li>
+      </Box>
+      <Link component={RouterLink} to="/audit">{t('audit')}</Link>
+    </Paper>)}
     <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 } }}>
       <Typography component="p" lang="en" sx={{ maxWidth: '78ch', mb: 3 }}>{adminGuide.introduction}</Typography>
       <Box component="nav" aria-labelledby="guide-contents">

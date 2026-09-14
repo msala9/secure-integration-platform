@@ -16,6 +16,21 @@ The page always reads authoritative state and shows:
 
 ## The five actions
 
+The next action appears first, with the required role and a link to its controls.
+Completed action forms are hidden. When ready, the primary link opens the matching
+Direct or Broker invocation procedure in the bundled Documentation page.
+
+Search Tenant, Application and Environment by name or code. Results come from the
+server in pages of 50; matching names show their distinct codes, and selection uses
+the immutable ID. Search is literal, case-insensitive and limited to 100 characters.
+Applications and Environments remain shared catalogs under the existing global
+read authorization. Installation choices are tenant-scoped and filtered by the
+selected Application/Environment; their search accepts an Installation ID fragment.
+Connector and version selectors also search their existing server catalogs.
+Changing context clears the dependent Installation selection. A delayed search
+response cannot replace a newer query, and reload resolves the selected identifiers
+even when they are outside the first result page. No search grants additional access.
+
 | # | Role | Primary action | Outcome |
 |---|---|---|---|
 | 1 | Security Administrator | Select Tenant, Application and Environment by name, choose Installation type and create the Installation. | The one-time enrollment handoff appears. |
@@ -34,8 +49,8 @@ Guided onboarding and **Installations** use the same choice and descriptions:
 - **Direct** (default for the Core pilot): application → Gateway, without a Local Broker.
 - **Broker**: application → Windows Local Broker → Gateway.
 
-Selecting an existing Installation reads its type from the server and disables the
-type selector. It does not convert the Installation or change its Environment.
+Selecting an existing Installation reads its type from the server and hides the
+completed creation form. It does not convert the Installation or change its Environment.
 Application and Environment also show the selected Installation's server-owned
 values, including after reload. Changing either selector clears the Installation
 selection; it does not move an existing Installation into the new context.

@@ -11,6 +11,25 @@ public sealed class AdminPaginationTests
     private static readonly DateTimeOffset Now = new(2026, 8, 5, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
+    public async Task M5_UT_Tenant_search_reaches_10000th_record_with_bounded_pages_and_literal_matching()
+    {
+        InMemoryGatewayRegistry registry = new();
+        for (int index = 0; index < 10000; index++)
+            await registry.AddTenantAsync(new(Guid.NewGuid(), $"tenant-{index:D5}", index >= 9998 ? "Shared name" : $"Tenant {index:D5}", TenantStatus.Active, Now), TestContext.Current.CancellationToken);
+        InMemoryAdminDirectoryStore directory = new(registry);
+        AdminPage<TenantRecord> last = await directory.ListTenantsAsync(0, 20, TestContext.Current.CancellationToken, " TENANT-09999 ");
+        Assert.Equal(1, last.Total);
+        Assert.Equal("tenant-09999", Assert.Single(last.Items).Code);
+        AdminPage<TenantRecord> firstDuplicate = await directory.ListTenantsAsync(0, 1, TestContext.Current.CancellationToken, "shared NAME");
+        AdminPage<TenantRecord> secondDuplicate = await directory.ListTenantsAsync(1, 1, TestContext.Current.CancellationToken, "shared NAME");
+        Assert.Equal(2, firstDuplicate.Total);
+        Assert.NotEqual(Assert.Single(firstDuplicate.Items).Id, Assert.Single(secondDuplicate.Items).Id);
+        Assert.Empty((await directory.ListTenantsAsync(0, 20, TestContext.Current.CancellationToken, "%")).Items);
+        await Assert.ThrowsAsync<GatewayException>(() => directory.ListTenantsAsync(0, 101, TestContext.Current.CancellationToken));
+        await Assert.ThrowsAsync<GatewayException>(() => directory.ListTenantsAsync(0, 20, TestContext.Current.CancellationToken, new string('x', 101)));
+    }
+
+    [Fact]
     public async Task M5_UT_Directory_pages_reach_records_beyond_the_first_hundred_with_stable_totals()
     {
         InMemoryGatewayRegistry registry = new();

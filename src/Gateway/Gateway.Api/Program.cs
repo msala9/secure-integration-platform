@@ -649,11 +649,11 @@ adminApi.MapGet("/runtime-wire-codes", async (HttpContext context, AdminAccessSe
     return Results.Ok(RuntimeWireCodeCatalog.Current);
 });
 
-adminApi.MapGet("/tenants", async (int? offset, int? limit, HttpContext context, AdminAccessService access, IAdminDirectoryStore directory, CancellationToken cancellationToken) =>
+adminApi.MapGet("/tenants", async (int? offset, int? limit, string? filter, HttpContext context, AdminAccessService access, IAdminDirectoryStore directory, CancellationToken cancellationToken) =>
 {
     AdminAccessContext admin = await access.ResolveAsync(context.User, cancellationToken).ConfigureAwait(false);
     AdminAccessService.Require(admin, null, AdminRole.Viewer, AdminRole.SecurityAdministrator);
-    return Results.Ok(await directory.ListTenantsAsync(offset ?? 0, limit ?? 50, cancellationToken).ConfigureAwait(false));
+    return Results.Ok(await directory.ListTenantsAsync(offset ?? 0, limit ?? 50, cancellationToken, filter).ConfigureAwait(false));
 });
 
 adminApi.MapGet("/tenants/{tenantId:guid}", async (Guid tenantId, HttpContext context, AdminAccessService access, IAdminDirectoryStore directory, CancellationToken cancellationToken) =>
@@ -695,11 +695,11 @@ adminApi.MapPost("/tenants/{tenantId:guid}:disable", async (Guid tenantId, HttpC
     return Results.Ok(result);
 });
 
-adminApi.MapGet("/applications", async (int? offset, int? limit, HttpContext context, AdminAccessService access, IAdminDirectoryStore directory, CancellationToken cancellationToken) =>
+adminApi.MapGet("/applications", async (int? offset, int? limit, string? filter, HttpContext context, AdminAccessService access, IAdminDirectoryStore directory, CancellationToken cancellationToken) =>
 {
     AdminAccessContext admin = await access.ResolveAsync(context.User, cancellationToken).ConfigureAwait(false);
     AdminAccessService.Require(admin, null, AdminRole.Viewer, AdminRole.SecurityAdministrator);
-    return Results.Ok(await directory.ListApplicationsAsync(offset ?? 0, limit ?? 50, cancellationToken).ConfigureAwait(false));
+    return Results.Ok(await directory.ListApplicationsAsync(offset ?? 0, limit ?? 50, cancellationToken, filter).ConfigureAwait(false));
 });
 
 adminApi.MapGet("/applications/{applicationId:guid}", async (Guid applicationId, HttpContext context, AdminAccessService access, IAdminDirectoryStore directory, CancellationToken cancellationToken) =>
@@ -743,18 +743,18 @@ adminApi.MapPost("/applications/{applicationId:guid}:disable", async (Guid appli
     return Results.Ok(result);
 });
 
-adminApi.MapGet("/environments", async (int? offset, int? limit, HttpContext context, AdminAccessService access, IAdminDirectoryStore directory, CancellationToken cancellationToken) =>
+adminApi.MapGet("/environments", async (int? offset, int? limit, string? filter, HttpContext context, AdminAccessService access, IAdminDirectoryStore directory, CancellationToken cancellationToken) =>
 {
     AdminAccessContext admin = await access.ResolveAsync(context.User, cancellationToken).ConfigureAwait(false);
     AdminAccessService.Require(admin, null, AdminRole.Viewer, AdminRole.SecurityAdministrator);
-    return Results.Ok(await directory.ListEnvironmentsAsync(offset ?? 0, limit ?? 50, cancellationToken).ConfigureAwait(false));
+    return Results.Ok(await directory.ListEnvironmentsAsync(offset ?? 0, limit ?? 50, cancellationToken, filter).ConfigureAwait(false));
 });
 
-adminApi.MapGet("/installations", async (Guid tenantId, int? offset, int? limit, HttpContext context, AdminAccessService access, IAdminDirectoryStore directory, CancellationToken cancellationToken) =>
+adminApi.MapGet("/installations", async (Guid tenantId, int? offset, int? limit, string? filter, Guid? applicationId, Guid? environmentId, HttpContext context, AdminAccessService access, IAdminDirectoryStore directory, CancellationToken cancellationToken) =>
 {
     AdminAccessContext admin = await access.ResolveAsync(context.User, cancellationToken).ConfigureAwait(false);
     AdminAccessService.Require(admin, tenantId, AdminRole.Viewer, AdminRole.Operator, AdminRole.SecurityAdministrator);
-    return Results.Ok(await directory.ListInstallationsAsync(tenantId, offset ?? 0, limit ?? 50, cancellationToken).ConfigureAwait(false));
+    return Results.Ok(await directory.ListInstallationsAsync(tenantId, offset ?? 0, limit ?? 50, cancellationToken, filter, applicationId, environmentId).ConfigureAwait(false));
 });
 
 adminApi.MapGet("/installations/{installationId}", async (Guid installationId, Guid tenantId, HttpContext context, AdminAccessService access, IAdminDirectoryStore directory, CancellationToken cancellationToken) =>
